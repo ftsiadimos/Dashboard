@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ 'Edit' if app else 'Add' }} Application</h1>
+    <a href="{{ url_for('main.apps_list') }}" class="btn">← Back</a>
+</div>
+
+<div class="form-card">
+    <form method="post" enctype="multipart/form-data">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="title">Title *</label>
+                <input type="text" id="title" name="title" value="{{ app.title if app else '' }}" required class="form-input" placeholder="My Application">
+            </div>
+            <div class="form-group">
+                <label for="url">URL *</label>
+                <input type="url" id="url" name="url" value="{{ app.url if app else '' }}" required class="form-input" placeholder="https://example.com">
+            </div>
+            <div class="form-group">
+                <label for="color">Color</label>
+                <div class="color-input-wrap">
+                    <input type="color" id="color" name="color" value="{{ app.color if app else '#1a1a2e' }}" class="form-color">
+                    <input type="text" value="{{ app.color if app else '#1a1a2e' }}" class="form-input color-text" id="colorText">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="category_id">Category</label>
+                <select id="category_id" name="category_id" class="form-input">
+                    <option value="">— None —</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if app and app.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group full-width">
+                <label for="description">Description</label>
+                <input type="text" id="description" name="description" value="{{ app.description if app else '' }}" class="form-input" placeholder="Short description (optional)">
+            </div>
+            <div class="form-group">
+                <label for="icon">Icon</label>
+                <input type="file" id="icon" name="icon" accept="image/*" class="form-input">
+                {% if app and app.icon %}
+                <div class="current-icon">
+                    <span>Current:</span>
+                    <img src="{{ url_for('main.uploaded_icon', filename=app.icon) }}" alt="" width="32" height="32">
+                </div>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="pinned" value="1" {% if app and app.pinned %}checked{% endif %}>
+                    <span>Pin to top</span>
+                </label>
+            </div>
+        </div>
+
+        <h3 class="form-section-title">API Integration (optional)</h3>
+        <p class="form-section-desc">Configure an API call to display live data on this app's tile.</p>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="api_url">API URL</label>
+                <input type="url" id="api_url" name="api_url" value="{{ app.api_url if app else '' }}" class="form-input" placeholder="https://myapp.example.com/api/status">
+            </div>
+            <div class="form-group">
+                <label for="api_method">Method</label>
+                <select id="api_method" name="api_method" class="form-input">
+                    {% for m in ['GET', 'POST'] %}
+                    <option value="{{ m }}" {% if app and app.api_method == m %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group full-width">
+                <label for="api_headers">Headers (JSON)</label>
+                <input type="text" id="api_headers" name="api_headers" value="{{ app.api_headers if app else '' }}" class="form-input" placeholder='{"Authorization": "Bearer token123"}'>
+                <small class="form-hint">JSON object, e.g. {"X-Api-Key": "abc123"}</small>
+            </div>
+            <div class="form-group full-width">
+                <label for="api_payload">Payload / Body</label>
+                <textarea id="api_payload" name="api_payload" class="form-input" placeholder='{
+  "jsonrpc": "2.0",
+  "method": "problem.get",
+  "params": {"countOutput": true, "severities": [1,2,3,4,5]},
+  "auth": "TOKEN",
+  "id": 1
+}' rows="4">{{ app.api_payload if app else '' }}</textarea>
+                <small class="form-hint">Request body for POST/PUT requests. Can be JSON or plain text.</small>
+            </div>
+            <div class="form-group">
+                <label for="api_value_template">Display Template</label>
+                <input type="text" id="api_value_template" name="api_value_template" value="{{ app.api_value_template if app else '' }}" class="form-input" placeholder="Status: {status} | Users: {data.count}">
+                <small class="form-hint">Use {path.to.key} for JSON fields, or a simple path like <code>data.status</code>. For text/html responses you may prefix with <code>regex:</code> and supply a capturing pattern (e.g. <code>regex:UPS Load</th>.*?<td[^>]*>([^<]+)</code>).</small>
+            </div>
+            <div class="form-group">
+                <label for="api_interval">Refresh Interval (seconds)</label>
+                <input type="number" id="api_interval" name="api_interval" value="{{ app.api_interval if app else 30 }}" class="form-input" min="5" max="3600" placeholder="30">
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ 'Update' if app else 'Add' }} Application</button>
+            <a href="{{ url_for('main.apps_list') }}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const colorInput = document.getElementById('color');
+    const colorText = document.getElementById('colorText');
+    // when picker changes update text
+    colorInput.addEventListener('input', () => { colorText.value = colorInput.value; });
+    // allow typing hex value too
+    colorText.addEventListener('input', () => { 
+        // simple sanity: prefix with '#' if missing
+        let val = colorText.value.trim();
+        if (val && val[0] !== '#') {
+            val = '#' + val;
+        }
+        colorInput.value = val;
+    });
+</script>
+{% endblock %}

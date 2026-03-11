@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Settings</h1>
+</div>
+
+<div class="form-card">
+    <form method="post">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="title">Dashboard Title</label>
+                <input type="text" id="title" name="title" value="{{ settings.get('title', 'Dashboard') }}" class="form-input">
+            </div>
+            <div class="form-group">
+                <label for="columns">Grid Columns</label>
+                <select id="columns" name="columns" class="form-input">
+                    {% for n in range(3, 9) %}
+                    <option value="{{ n }}" {% if settings.get('columns', '4') == n|string %}selected{% endif %}>{{ n }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group full-width">
+                <label for="background_url">Background Image URL</label>
+                <input type="url" id="background_url" name="background_url" value="{{ settings.get('background_url', '') }}" class="form-input" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="form-group">
+                <label for="search_provider">Search Provider URL</label>
+                <input type="text" id="search_provider" name="search_provider" value="{{ settings.get('search_provider', 'https://www.google.com/search?q=') }}" class="form-input">
+                <small class="form-hint">Use the query parameter format, e.g. https://www.google.com/search?q=</small>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="hidden" name="search_enabled" value="false">
+                    <input type="checkbox" name="search_enabled" value="true" {% if settings.get('search_enabled', 'true') == 'true' %}checked{% endif %}>
+                    <span>Enable Search Bar</span>
+                </label>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

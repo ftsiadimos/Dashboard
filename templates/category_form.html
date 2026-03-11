@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ 'Edit' if category else 'Add' }} Category</h1>
+    <a href="{{ url_for('main.categories_list') }}" class="btn">← Back</a>
+</div>
+
+<div class="form-card">
+    <form method="post">
+        <div class="form-group">
+            <label for="name">Name *</label>
+            <input type="text" id="name" name="name" value="{{ category.name if category else '' }}" required class="form-input" placeholder="Category name">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ 'Update' if category else 'Add' }} Category</button>
+            <a href="{{ url_for('main.categories_list') }}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
