@@ -101,7 +101,7 @@ def _ensure_tables(db):
             ("background_url", ""),
             ("search_provider", "https://www.google.com/search?q="),
             ("search_enabled", "true"),
-            ("columns", "6"),
+            ("columns", "4"),
         ]
         db.executemany(
             "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", defaults
