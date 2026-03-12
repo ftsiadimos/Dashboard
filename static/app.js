@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => r.json())
             .then(data => {
                 if (data.ok) {
-                    statsEl.innerHTML = '<span class="stats-value">' + escapeHtml(data.display) + '</span>';
+                    const statsVal = '<span class="stats-value">' + escapeHtml(data.display) + '</span>';
+                    statsEl.innerHTML = statsVal;
                 } else {
                     statsEl.innerHTML = '<span class="stats-error">' + escapeHtml(data.display) + '</span>';
                 }

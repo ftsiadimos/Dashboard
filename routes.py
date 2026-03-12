@@ -399,6 +399,8 @@ def _extract_value(data, template):
             return " | ".join(parts)
         return str(data)[:120]
 
+
+
     # if template begins with "regex:", treat data as plain text and apply pattern
     if isinstance(data, str) and isinstance(template, str) and template.startswith("regex:"):
         import re
@@ -417,6 +419,30 @@ def _extract_value(data, template):
 
     val = _resolve(data, template)
     return str(val) if val is not None else "—"
+
+
+
+
+
+def _npm_get_hosts(base_url: str, identity: str, secret: str, verify: bool = True):
+    """Authenticate with NPM and return /api/nginx/proxy-hosts JSON."""
+    sess = http_requests.Session()
+    if not verify:
+        sess.verify = False
+
+    auth = sess.post(base_url + "api/tokens",
+                     json={"identity": identity, "secret": secret},
+                     headers={"Accept": "application/json"})
+    auth.raise_for_status()
+    token = auth.json().get("token")
+    if not token:
+        raise ValueError("failed to obtain NPM token")
+
+    res = sess.get(base_url + "api/nginx/proxy-hosts",
+                   headers={"Accept": "application/json",
+                            "Authorization": f"Bearer {token}"})
+    res.raise_for_status()
+    return res.json()
 
 
 @main.route("/api/app/<int:app_id>/stats")
@@ -444,12 +470,44 @@ def api_app_stats(app_id):
         # prepare request kwargs; include payload if provided for non-GET methods
         kwargs = {"headers": headers, "timeout": 10, "verify": True}
         payload_val = app["api_payload"] if "api_payload" in app.keys() else None
+        # special-case Nginx Proxy Manager: perform login flow if creds provided
+        if app["api_url"].endswith("/api/nginx/proxy-hosts") and payload_val:
+            try:
+                creds = json.loads(payload_val)
+            except Exception:
+                creds = {}
+            # support both identity/secret and email/password naming
+            if isinstance(creds, dict) and (
+                ("identity" in creds and "secret" in creds) or
+                ("email" in creds and "password" in creds)
+            ):
+                ident = creds.get("identity") or creds.get("email")
+                secret = creds.get("secret") or creds.get("password")
+                verify = not creds.get("ignore_tls", False)
+                data = _npm_get_hosts(
+                    app["api_url"].rsplit("/api/nginx/proxy-hosts", 1)[0] + "/",
+                    ident,
+                    secret,
+                    verify,
+                )
+                display = _extract_value(data, app["api_value_template"])
+                return jsonify({"ok": True, "display": display})
         if payload_val and method in ("POST", "PUT", "PATCH", "DELETE"):
             try:
                 kwargs["json"] = json.loads(payload_val)
             except Exception:
                 kwargs["data"] = payload_val
         resp = http_requests.request(method, app["api_url"], **kwargs)
+
+        # LOGGING: dump status and body if not OK
+        if not resp.ok:
+            current_app.logger.warning(
+                "API call to %s returned %s:\n%s",
+                app["api_url"],
+                resp.status_code,
+                resp.text,
+            )
+
         resp.raise_for_status()
         try:
             data = resp.json()
