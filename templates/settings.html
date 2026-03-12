@@ -30,9 +30,16 @@
             </div>
             <div class="form-group">
                 <label class="checkbox-label">
-                    <input type="hidden" name="search_enabled" value="false">
                     <input type="checkbox" name="search_enabled" value="true" {% if settings.get('search_enabled', 'true') == 'true' %}checked{% endif %}>
+                    <input type="hidden" name="search_enabled" value="false"> <!-- ensures unchecked state is submitted -->
                     <span>Enable Search Bar</span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="navbar_enabled" value="true" {% if settings.get('navbar_enabled', 'true') == 'true' %}checked{% endif %}>
+                    <input type="hidden" name="navbar_enabled" value="false">
+                    <span>Show Top Navigation Bar</span>
                 </label>
             </div>
         </div>

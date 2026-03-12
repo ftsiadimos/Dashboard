@@ -101,6 +101,7 @@ def _ensure_tables(db):
             ("background_url", ""),
             ("search_provider", "https://www.google.com/search?q="),
             ("search_enabled", "true"),
+            ("navbar_enabled", "true"),
             ("columns", "4"),
         ]
         db.executemany(

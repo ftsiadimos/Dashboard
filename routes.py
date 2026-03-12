@@ -314,10 +314,16 @@ def category_delete(cat_id):
 @main.route("/settings", methods=["GET", "POST"])
 def settings_page():
     if request.method == "POST":
-        keys = ["title", "background_url", "search_provider", "search_enabled", "columns"]
+        # we persist a handful of settings; boolean flags need special handling
+        keys = ["title", "background_url", "search_provider", "search_enabled", "navbar_enabled", "columns"]
         with get_db() as db:
             for key in keys:
-                value = request.form.get(key, "").strip()
+                if key in ("search_enabled", "navbar_enabled"):
+                    # checkbox + hidden field means request.form.get will always return the
+                    # first value we send ("false"), so normalize explicitly
+                    value = "true" if request.form.get(key) == "true" else "false"
+                else:
+                    value = request.form.get(key, "").strip()
                 db.execute(
                     "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
                     (key, value),

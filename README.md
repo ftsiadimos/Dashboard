@@ -26,6 +26,7 @@ A self-hosted application dashboard built with Python and Flask.
 - **Color Coding** — Assign colors to visually distinguish apps (picker and text input are synced)
 - **API Integration** — Fleximple API lets any HTTP endpoint drive a tile with templated data
 - **Search Bar** — Configurable web search integrated into the dashboard
+- **Hideable Top Bar** — turn off the navigation header from settings for a minimalist look
 - **Responsive Grid** — Configurable column count with responsive breakpoints
 - **Background Image** — Set a custom background image URL
 - **Dark Theme** — Modern dark UI out of the box
@@ -116,6 +117,8 @@ Environment variables:
 |---|---|---|
 | `SECRET_KEY` | random | Flask secret key |
 | `APP_TITLE` | Dashboard | Title shown in navbar and browser tab |
+
+*Navigation visibility can be toggled via the web UI; there is no separate environment variable.*
 | `APP_PORT` | 5000 | Port to listen on |
 | `APP_HOST` | 0.0.0.0 | Host to bind to |
 | `DATABASE_URL` | sqlite:///data/dashboard.db | Database URI |

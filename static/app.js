@@ -43,6 +43,22 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(() => fetchStats(card), interval * 1000);
     });
 
+    // keep navbar collapse state across reloads
+    const navbar = document.querySelector('.navbar');
+    const toggleBtn = document.getElementById('navbarToggle');
+    if (toggleBtn) {
+        // restore previous state
+        if (localStorage.getItem('navbarCollapsed') === 'true' && navbar) {
+            navbar.classList.add('collapsed');
+        }
+        toggleBtn.addEventListener('click', () => {
+            if (navbar) {
+                navbar.classList.toggle('collapsed');
+                localStorage.setItem('navbarCollapsed', navbar.classList.contains('collapsed'));
+            }
+        });
+    }
+
     // enable drag-and-drop reorder for every grid
     function makeGridSortable(grid) {
         let dragging = null;

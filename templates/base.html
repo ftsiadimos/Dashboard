@@ -8,7 +8,8 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
 </head>
 <body{% if settings.get('background_url') %} style="background-image: url('{{ settings.get('background_url') }}'); background-size: cover; background-position: center; background-attachment: fixed;"{% endif %}>
-    <nav class="navbar">
+    <!-- navbar is always output, but start collapsed when disabled in settings -->
+    <nav class="navbar{% if settings.get('navbar_enabled', 'true') != 'true' %} collapsed{% endif %}">
         <a href="{{ url_for('main.index') }}" class="nav-brand">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             <span>{{ settings.get('title', 'Dashboard') }}</span>
@@ -23,6 +24,9 @@
             <a href="{{ url_for('main.about_page') }}" class="nav-link">About</a>
         </div>
     </nav>
+    <button id="navbarToggle" class="navbar-toggle" aria-label="Toggle navigation">
+        &#9776;
+    </button>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
