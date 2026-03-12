@@ -14,8 +14,9 @@
             <div class="form-group">
                 <label for="columns">Grid Columns</label>
                 <select id="columns" name="columns" class="form-input">
+                    <option value="auto" {% if settings.get('columns', 'auto') == 'auto' %}selected{% endif %}>Auto (responsive)</option>
                     {% for n in range(3, 9) %}
-                    <option value="{{ n }}" {% if settings.get('columns', '4') == n|string %}selected{% endif %}>{{ n }}</option>
+                    <option value="{{ n }}" {% if settings.get('columns') == n|string %}selected{% endif %}>{{ n }}</option>
                     {% endfor %}
                 </select>
             </div>

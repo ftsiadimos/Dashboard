@@ -57,7 +57,8 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>
         Pinned
     </h2>
-    <div class="app-grid" style="grid-template-columns: repeat({{ settings.get('columns', '4') }}, 1fr);">
+    {% set cols = settings.get('columns', 'auto') %}
+    <div class="app-grid"{% if cols != 'auto' %} style="grid-template-columns: repeat({{ cols }}, 1fr);"{% endif %}>
         {% for app in pinned %}
         {{ app_card(app) }}
         {% endfor %}
@@ -71,7 +72,7 @@
 {% if cat_apps %}
 <section class="section">
     <h2 class="section-title">{{ cat.name }}</h2>
-    <div class="app-grid" style="grid-template-columns: repeat({{ settings.get('columns', '4') }}, 1fr);">
+    <div class="app-grid"{% if cols != 'auto' %} style="grid-template-columns: repeat({{ cols }}, 1fr);"{% endif %}>
         {% for app in cat_apps %}
         {{ app_card(app) }}
         {% endfor %}
@@ -83,7 +84,7 @@
 {% if uncategorized %}
 <section class="section">
     <h2 class="section-title">Other</h2>
-    <div class="app-grid" style="grid-template-columns: repeat({{ settings.get('columns', '4') }}, 1fr);">
+    <div class="app-grid"{% if cols != 'auto' %} style="grid-template-columns: repeat({{ cols }}, 1fr);"{% endif %}>
         {% for app in uncategorized %}
         {{ app_card(app) }}
         {% endfor %}

@@ -102,9 +102,17 @@ a:hover { text-decoration: underline; }
 
 /* ── Container ────────────────────────────────────────────────────────────── */
 .container {
-    max-width: 1400px;
+    /* reduce the max width so tiles span more of the viewport, but keep
+       some sensible limit on wide screens */
+    max-width: 90vw;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 2rem 1.5rem; /* slightly smaller horizontal padding */
+}
+
+/* When the viewport is extremely wide, still cap the container so cards don’t
+   become ridiculously stretched */
+@media (min-width: 1600px) {
+    .container { max-width: 1600px; }
 }
 
 /* ── Search Bar ───────────────────────────────────────────────────────────── */
@@ -160,13 +168,88 @@ a:hover { text-decoration: underline; }
 /* ── App Grid ─────────────────────────────────────────────────────────────── */
 .app-grid {
     display: grid;
-    gap: 2rem; /* more space between tiles */
+    gap: 2rem; /* more breathing room between tiles */
+    /* allow cards to stretch from roughly 200px up to available space
+       auto-fit ensures as many columns as will comfortably fit without
+       exceeding a sensible minimum width; the max-width on .container
+       keeps us from having more than about 6 columns on very wide screens */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-@media (max-width: 1200px) { .app-grid { grid-template-columns: repeat(4, 1fr) !important; } }
-@media (max-width: 900px)  { .app-grid { grid-template-columns: repeat(3, 1fr) !important; } }
-@media (max-width: 600px)  { .app-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+/* explicit fallbacks for small devices (grid-template above handles most
+   of the sizing but these ensure exactly one column once below 600px) */
+@media (max-width: 600px)  { .app-grid { grid-template-columns: 1fr !important; } }
 @media (max-width: 400px)  { .app-grid { grid-template-columns: 1fr !important; } }
+
+/* ── Mobile adjustments ──────────────────────────────────────────────────── */
+html { font-size: 15px; }
+@media (max-width: 900px) {
+    html { font-size: 14px; }
+}
+@media (max-width: 600px) {
+    html { font-size: 13px; }
+}
+
+/* container padding on small screens (widened for mobile) */
+@media (max-width: 800px) {
+    .container { padding: 1.5rem; }
+}
+@media (max-width: 500px) {
+    .container { padding: 1rem; }
+}
+
+/* ensure grid and cards don't kiss screen edges */
+@media (max-width: 600px) {
+    .app-grid { padding: 0 0.75rem; gap: 1.5rem; }
+}
+
+/* hide title when card too narrow for text */
+@container (max-width: 140px) {
+    .app-info { display: none; }
+}
+
+/* allow title to wrap onto two lines once the card is at least 160px wide */
+@container (min-width: 160px) {
+    .app-title { white-space: normal; }
+}
+
+/* navbar becomes vertical on narrow viewports */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.75rem 1rem;
+    }
+    .nav-links {
+        flex-direction: column;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    .nav-link {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 0;
+    }
+    #navbarToggle { display: block; }
+}
+
+/* hide toggle button on larger screens unless nav is collapsed via settings */
+#navbarToggle { display: none; }
+.navbar.collapsed + #navbarToggle {
+    /* when the bar is hidden by the "show navigation bar" setting, show the
+       toggle so the user can open it manually even on desktop */
+    display: block;
+}
+
+/* search bar full width on small viewports */
+@media (max-width: 600px) {
+    .search-bar { margin: 0 auto 1.5rem; padding: 0 0.5rem; }
+}
+
+/* hide brand text on very narrow screens */
+@media (max-width: 500px) {
+    .nav-brand span { display: none; }
+}
 
 .app-card {
     display: flex;
@@ -189,8 +272,8 @@ a:hover { text-decoration: underline; }
 }
 
 .app-card-footer {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
     color: var(--text-muted);
     background: rgba(0,0,0,0.1);
     display: flex;
@@ -210,8 +293,9 @@ a:hover { text-decoration: underline; }
     display: flex;
     align-items: center;
     gap: 1.2rem;
-    padding: 1rem 1.2rem;
+    padding: 1.2rem 1.5rem;
     width: 100%;
+    container-type: inline-size;
 }
 
 .app-icon-wrap {
@@ -223,19 +307,13 @@ a:hover { text-decoration: underline; }
     justify-content: center;
     flex-shrink: 0;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-    border: 2px solid rgba(255,255,255,0.12);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.12);
 }
 
 .app-icon {
-    width: 56px;
-    height: 56px;
-    object-fit: contain;
-}
-
-.app-icon {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     object-fit: contain;
 }
 /* Circle wrapper for icon */
@@ -248,7 +326,7 @@ a:hover { text-decoration: underline; }
     border-radius: 0; /* full square container */
     background: rgba(0,0,0,0.18);
     margin-right: 1rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.18);
 }
 
 .app-arrow {
@@ -256,8 +334,8 @@ a:hover { text-decoration: underline; }
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     opacity: 0.85;
 }
 .app-icon-letter {
@@ -274,13 +352,14 @@ a:hover { text-decoration: underline; }
 
 .app-title {
     font-weight: 600;
-    font-size: 0.92rem;
-    /* allow wrapping so longer names (≈16 chars) are visible on two lines */
+    font-size: 1.1rem; /* larger title */
+    /* allow wrapping to two lines when container is a bit wider than minimum */
     white-space: normal;
-    word-break: break-word;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-height: 3em; /* roughly two lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 /* dragging styles */
@@ -288,7 +367,7 @@ a:hover { text-decoration: underline; }
 
 
 .app-desc {
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
@@ -552,4 +631,6 @@ a:hover { text-decoration: underline; }
     .form-grid { grid-template-columns: 1fr; }
     .form-card { padding: 1.2rem; }
     .page-header { flex-wrap: wrap; gap: 0.7rem; }
+    #navbarToggle { display: block; }
+    .nav-brand span { display: none; }
 }
