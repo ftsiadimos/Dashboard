@@ -1,6 +1,6 @@
 # Dashboard
 
-A self-hosted application dashboard built with Python and Flask.
+This is a self-hosted web dashboard built with Python + Flask that lets you manage and launch your web applications in a single place.
 
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue) ![Flask](https://img.shields.io/badge/Flask-3.x-green)
