@@ -252,6 +252,7 @@ html { font-size: 15px; }
 }
 
 .app-card {
+    position: relative;
     display: flex;
     flex-direction: column; /* footer below main row */
     align-items: stretch;
@@ -260,7 +261,7 @@ html { font-size: 15px; }
     background:
         linear-gradient(to right, rgba(18, 18, 18, 0.82) 0%, rgba(32, 16, 16, 0) 100%),
         color-mix(in srgb, var(--card-color, var(--primary)) 12%, var(--bg-card));
-    border-radius: 18px;
+    border-radius: var(--radius);
     box-shadow: 0 4px 16px rgba(0,0,0,0.35);
     text-decoration: none;
     color: var(--text);
@@ -303,6 +304,7 @@ html { font-size: 15px; }
     align-items: center;
     gap: 1.2rem;
     padding: 1.2rem 1.5rem;
+    padding-right: 3.2rem; /* make room for the curved arrow panel */
     width: 100%;
     container-type: inline-size;
 }
@@ -339,13 +341,36 @@ html { font-size: 15px; }
 }
 
 .app-arrow {
-    margin-left: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    opacity: 0.85;
+    width: 3rem;
+    padding-right: 0.4rem;
+    opacity: 0.9;
+    background: rgba(0,0,0,0.18);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    border-top-left-radius: 999px;
+    border-bottom-left-radius: 999px;
+}
+
+.app-arrow svg {
+    width: 26px;
+    height: 26px;
+    padding: 0.25rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.25));
+    animation: glowPulse 2.5s infinite ease-in-out;
+}
+
+@keyframes glowPulse {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(255,255,255,0.22)); }
+    50% { filter: drop-shadow(0 0 8px rgba(255,255,255,0.28)); }
 }
 .app-icon-letter {
     font-size: 1.2rem;
