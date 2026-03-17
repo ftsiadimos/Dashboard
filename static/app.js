@@ -18,13 +18,30 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => r.json())
             .then(data => {
                 if (data.ok) {
-                    const statsVal = '<span class="stats-value">' + escapeHtml(data.display) + '</span>';
+                    const display = String(data.display || '');
+
+                    // Blink the card when the display indicates active alerts (>0).
+                    // This uses a heuristic: the display must contain the word "alert" and a numeric count.
+                    const hasAlertWord = /\balerts?\b/i.test(display);
+                    const counts = (display.match(/\d+/g) || [])
+                        .map(n => parseInt(n, 10))
+                        .filter(n => !Number.isNaN(n));
+                    const alertCount = counts.length ? Math.max(...counts) : 0;
+                    const isAlert = hasAlertWord && alertCount > 0;
+
+                    card.classList.toggle('has-alerts-warning', isAlert && alertCount <= 2);
+                    card.classList.toggle('has-alerts-danger', isAlert && alertCount >= 3);
+                    card.classList.toggle('has-alerts', isAlert);
+
+                    const statsVal = '<span class="stats-value">' + escapeHtml(display) + '</span>';
                     statsEl.innerHTML = statsVal;
                 } else {
+                    card.classList.remove('has-alerts');
                     statsEl.innerHTML = '<span class="stats-error">' + escapeHtml(data.display) + '</span>';
                 }
             })
             .catch(() => {
+                card.classList.remove('has-alerts');
                 statsEl.innerHTML = '<span class="stats-error">Fetch failed</span>';
             });
     }

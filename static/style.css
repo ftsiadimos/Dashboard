@@ -12,6 +12,8 @@
     --primary-hover: #3b57d1;
     --danger: #e74c5a;
     --danger-hover: #c93842;
+    --warning: #e67e22;
+    --warning-hover: #d7620f;
     --success: #2ecc71;
     --success-hover: #27ae60;
     --border: #2f2f3f;
@@ -297,6 +299,27 @@ html { font-size: 15px; }
     box-shadow: 0 10px 28px rgba(0,0,0,0.45);
     text-decoration: none;
     color: var(--text);
+}
+
+/* Blink the tile when alerts are present */
+.app-card.has-alerts-warning {
+    border-color: var(--warning);
+    animation: alertPulseWarning 1.4s infinite ease-in-out;
+}
+
+@keyframes alertPulseWarning {
+    0%, 100% { box-shadow: 0 4px 16px rgba(230, 126, 34, 0.25); }
+    50% { box-shadow: 0 0 20px rgba(230, 126, 34, 0.65); }
+}
+
+.app-card.has-alerts-danger {
+    border-color: var(--danger);
+    animation: alertPulseDanger 1.4s infinite ease-in-out;
+}
+
+@keyframes alertPulseDanger {
+    0%, 100% { box-shadow: 0 4px 16px rgba(231, 76, 90, 0.25); }
+    50% { box-shadow: 0 0 20px rgba(231, 76, 90, 0.65); }
 }
 
 .app-card-main {
