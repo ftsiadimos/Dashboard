@@ -127,14 +127,22 @@ Environment variables:
 ## Project Structure
 
 ```
-dashboard/
-├── app.py              # Flask application factory
-├── config.py           # Configuration
-├── database.py         # SQLite setup & migrations
-├── routes.py           # All routes (dashboard, CRUD, API)
+.
+├── app.py              # Flask application entrypoint (creates app from dashboard package)
+├── dashboard/          # Main application package
+│   ├── __init__.py     # App factory, blueprint registration
+│   ├── config.py       # Configuration (environment + defaults)
+│   ├── database.py     # SQLAlchemy models + DB init/migrations
+│   ├── utils.py        # Shared helper functions
+│   ├── blueprints/     # Route modules (single shared blueprint)
+│   │   ├── __init__.py
+│   │   ├── main.py     # Home page, about page, icon endpoint
+│   │   ├── apps.py     # Applications CRUD
+│   │   ├── categories.py
+│   │   ├── settings.py
+│   │   └── api.py      # Drag/reorder + stats endpoints
 ├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
+├── docker-compose.yml.example  # Pulls ftsiadimos/dashboard:latest
 ├── static/
 │   ├── style.css       # Dark theme CSS
 │   ├── app.js          # Frontend JS
@@ -146,7 +154,7 @@ dashboard/
 │   ├── app_form.html   # Add/Edit application
 │   ├── categories.html # Categories list
 │   ├── category_form.html
-│   ├── settings.html   # Dashboard settings (still includes GitHub repository URL)
+│   ├── settings.html   # Dashboard settings
 │   └── about.html      # About page showing version and repo URL
 └── data/               # SQLite db + uploaded icons (created at runtime)
 ```

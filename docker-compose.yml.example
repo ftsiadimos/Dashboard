@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  dashboard:
+    image: ftsiadimos/dashboard:latest
+    container_name: dashboard
+    ports:
+      - "6008:6008"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - SECRET_KEY=change-me-to-a-random-string
+      - APP_TITLE=Dashboard
+    restart: unless-stopped
