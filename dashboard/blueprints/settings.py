@@ -9,7 +9,7 @@ from dashboard.utils import get_settings
 def settings_page():
     if request.method == "POST":
         # we persist a handful of settings; boolean flags need special handling
-        keys = ["title", "background_url", "search_provider", "search_enabled", "navbar_enabled", "columns"]
+        keys = ["title", "background_url", "search_provider", "search_enabled", "navbar_enabled"]
         with get_db() as db:
             for key in keys:
                 if key in ("search_enabled", "navbar_enabled"):

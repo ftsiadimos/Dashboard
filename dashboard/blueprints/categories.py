@@ -36,10 +36,48 @@ def category_add():
             flash("Category name is required.", "error")
             return render_template("category_form.html", settings=settings)
         with get_db() as db:
-            db.add(Category(name=name))
+            max_order = db.query(func.max(Category.sort_order)).scalar() or 0
+            db.add(Category(name=name, sort_order=max_order + 1))
         flash("Category added.", "success")
         return redirect(url_for("main.categories_list"))
     return render_template("category_form.html", settings=settings)
+
+
+@main.route("/categories/<int:cat_id>/move/<direction>", methods=["POST"])
+def category_move(cat_id, direction):
+    """Move a category up or down in the display order."""
+    if direction not in ("up", "down"):
+        flash("Invalid move direction.", "error")
+        return redirect(url_for("main.categories_list"))
+
+    with get_db() as db:
+        current = db.get(Category, cat_id)
+        if not current:
+            flash("Category not found.", "error")
+            return redirect(url_for("main.categories_list"))
+
+        if direction == "up":
+            neighbor = (
+                db.query(Category)
+                .filter(Category.sort_order < current.sort_order)
+                .order_by(Category.sort_order.desc())
+                .first()
+            )
+        else:
+            neighbor = (
+                db.query(Category)
+                .filter(Category.sort_order > current.sort_order)
+                .order_by(Category.sort_order)
+                .first()
+            )
+
+        if neighbor:
+            current.sort_order, neighbor.sort_order = neighbor.sort_order, current.sort_order
+            flash("Category order updated.", "success")
+        else:
+            flash("Category is already at the top/bottom.", "info")
+
+    return redirect(url_for("main.categories_list"))
 
 
 @main.route("/categories/<int:cat_id>/edit", methods=["GET", "POST"])

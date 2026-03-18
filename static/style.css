@@ -4,7 +4,7 @@
 :root {
     --bg: #2c2c2c;
     --bg-surface: #373737;
-    --bg-card: #4a4a4a; /* lighter grey for cards */
+    --bg-card: #252525; /* darker grey for cards */
     --bg-hover: #3f3f3f;
     --text: #e2e2e2;
     --text-muted: #a8a8a8;
@@ -169,19 +169,14 @@ a:hover { text-decoration: underline; }
 
 /* ── App Grid ─────────────────────────────────────────────────────────────── */
 .app-grid {
-    display: grid;
-    gap: 2rem; /* more breathing room between tiles */
-    /* allow cards to stretch from roughly 200px up to available space
-       auto-fit ensures as many columns as will comfortably fit without
-       exceeding a sensible minimum width; the max-width on .container
-       keeps us from having more than about 6 columns on very wide screens */
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    padding: 30px 10px;
+    gap: 20px;
 }
-
-/* explicit fallbacks for small devices (grid-template above handles most
-   of the sizing but these ensure exactly one column once below 600px) */
-@media (max-width: 600px)  { .app-grid { grid-template-columns: 1fr !important; } }
-@media (max-width: 400px)  { .app-grid { grid-template-columns: 1fr !important; } }
 
 /* ── Mobile adjustments ──────────────────────────────────────────────────── */
 html { font-size: 15px; }
@@ -203,6 +198,11 @@ html { font-size: 15px; }
 /* ensure grid and cards don't kiss screen edges */
 @media (max-width: 600px) {
     .app-grid { padding: 0 0.75rem; gap: 1.5rem; }
+}
+
+/* For very narrow viewports, fall back to a single column to keep cards readable */
+@media (max-width: 480px) {
+    .app-card { flex: 0 0 100%; width: 100%; max-width: none; }
 }
 
 /* hide title when card too narrow for text */
@@ -259,21 +259,27 @@ html { font-size: 15px; }
     flex-direction: column; /* footer below main row */
     align-items: stretch;
     padding: 0;
+
+    /* Tile size + layout (Heimdall-style) */
+    width: 280px;
+    min-height: 90px;
+    margin: 20px;
+    flex: 0 0 280px;
+
     /* subtle tint based on the app accent color, while keeping the overall dark theme */
-    background:
-        linear-gradient(to right, rgba(18, 18, 18, 0.82) 0%, rgba(32, 16, 16, 0) 100%),
-        color-mix(in srgb, var(--card-color, var(--primary)) 12%, var(--bg-card));
-    border-radius: var(--radius);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    background-image: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.25));
+    background-color: color-mix(in srgb, var(--card-color, var(--primary)) 12%, var(--bg-card));
+    border-radius: 6px;
+    border: 1px solid rgba(76, 76, 76, 0.4);
+
+    box-shadow: 0 0 20px 2px rgba(0,0,0,0.3);
     text-decoration: none;
     color: var(--text);
-    transition: box-shadow var(--transition), background var(--transition), transform var(--transition), filter var(--transition);
-    border: none;
-    border-left: 4px solid var(--card-color, var(--primary));
+    transition: all 0.35s ease-in-out;
     overflow: hidden;
     will-change: transform, filter, box-shadow;
-    /* size controlled by grid; no fixed min/max */
 }
+
 
 .app-card:focus-visible {
     outline: 0;
@@ -325,11 +331,16 @@ html { font-size: 15px; }
 .app-card-main {
     display: flex;
     align-items: center;
-    gap: 1.2rem;
-    padding: 1.2rem 1.5rem;
-    padding-right: 3.2rem; /* make room for the curved arrow panel */
+    gap: 1rem;
+    padding: 15px;
+    padding-right: 20px;
     width: 100%;
     container-type: inline-size;
+}
+
+/* Hide the right-side arrow panel */
+.app-arrow {
+    display: none !important;
 }
 
 .app-icon-wrap {
@@ -367,12 +378,11 @@ html { font-size: 15px; }
     position: absolute;
     top: 0;
     bottom: 0;
-    right: 0;
+    right: -30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 3rem;
-    padding-right: 0.4rem;
+    width: 100px;
     opacity: 0.9;
     background: rgba(0,0,0,0.18);
     border-left: 1px solid rgba(255,255,255,0.08);
@@ -382,12 +392,12 @@ html { font-size: 15px; }
 }
 
 .app-arrow svg {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     padding: 0.25rem;
-    border-radius: 999px;
+    border-radius: 50%;
     background: rgba(255,255,255,0.08);
-    filter: drop-shadow(0 0 6px rgba(255,255,255,0.25));
+    filter: drop-shadow(2px 0 8px rgba(0,0,0,0.4));
     animation: glowPulse 2.5s infinite ease-in-out;
 }
 
@@ -396,7 +406,7 @@ html { font-size: 15px; }
     50% { filter: drop-shadow(0 0 8px rgba(255,255,255,0.28)); }
 }
 .app-icon-letter {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 700;
     color: white;
 }
@@ -409,7 +419,7 @@ html { font-size: 15px; }
 
 .app-title {
     font-weight: 600;
-    font-size: 1.1rem; /* larger title */
+    font-size: 0.95rem; /* smaller title */
     /* allow wrapping to two lines when container is a bit wider than minimum */
     white-space: normal;
     overflow: hidden;
