@@ -9,21 +9,39 @@
 </div>
 
 {% if apps %}
-<div class="table-wrap">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Icon</th>
-                <th>Title</th>
-                <th>URL</th>
-                <th>Category</th>
-                <th>Pinned</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="sortableApps">
+<form method="post" action="{{ url_for('main.apps_bulk_update') }}">
+    <div class="bulk-actions">
+        <label>
+            Change category for selected:
+            <select name="category_id">
+                <option value="">Uncategorized</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit" class="btn btn-primary" id="bulkApplyBtn" disabled>Apply</button>
+    </div>
+
+    <div class="table-wrap">
+        <table id="appsTable" class="table">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAllApps" title="Select all"></th>
+                    <th>Icon</th>
+                    <th data-sort="string">Title <span class="sort-indicator"></span></th>
+                    <th data-sort="string">URL <span class="sort-indicator"></span></th>
+                    <th data-sort="string">Category <span class="sort-indicator"></span></th>
+                    <th data-sort="string">Pinned <span class="sort-indicator"></span></th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="sortableApps">
             {% for app in apps %}
             <tr data-id="{{ app.id }}">
+                <td>
+                    <input type="checkbox" name="app_ids" value="{{ app.id }}" class="app-select">
+                </td>
                 <td>
                     <div class="table-icon" style="background-color: {{ app.color }}">
                         {% if app.icon %}
@@ -48,6 +66,7 @@
         </tbody>
     </table>
 </div>
+</form>
 {% else %}
 <div class="empty-state">
     <h3>No applications yet</h3>
@@ -55,4 +74,85 @@
     <a href="{{ url_for('main.app_add') }}" class="btn btn-primary">Add Application</a>
 </div>
 {% endif %}
+
+{% block scripts %}
+<script>
+// Sort the apps table by clicking the header. Toggles between ascending/descending.
+(function () {
+    const table = document.getElementById('appsTable');
+    if (!table) return;
+
+    const tbody = table.tBodies[0];
+    const headers = Array.from(table.querySelectorAll('th[data-sort]'));
+
+    function getCellValue(row, idx) {
+        const cell = row.children[idx];
+        if (!cell) return '';
+        return cell.innerText.trim();
+    }
+
+    function compareValues(a, b, asc) {
+        // numeric compare if both are numbers
+        const aNum = parseFloat(a);
+        const bNum = parseFloat(b);
+        if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
+            return asc ? aNum - bNum : bNum - aNum;
+        }
+        return asc ? a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+                   : b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' });
+    }
+
+    let currentSort = { column: null, asc: true };
+
+    // Bulk selection helpers
+    const selectAll = document.getElementById('selectAllApps');
+    const appCheckboxes = Array.from(document.querySelectorAll('.app-select'));
+    const bulkApplyBtn = document.getElementById('bulkApplyBtn');
+
+    function updateBulkButtonState() {
+        const anySelected = appCheckboxes.some(cb => cb.checked);
+        if (bulkApplyBtn) bulkApplyBtn.disabled = !anySelected;
+        if (selectAll) selectAll.checked = anySelected && appCheckboxes.every(cb => cb.checked);
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            appCheckboxes.forEach(cb => { cb.checked = selectAll.checked; });
+            updateBulkButtonState();
+        });
+    }
+
+    appCheckboxes.forEach(cb => cb.addEventListener('change', updateBulkButtonState));
+
+    headers.forEach((th) => {
+        const colIndex = th.cellIndex;
+        const indicator = th.querySelector('.sort-indicator');
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', () => {
+            const asc = currentSort.column === colIndex ? !currentSort.asc : true;
+            currentSort = { column: colIndex, asc };
+
+            headers.forEach(h => {
+                h.removeAttribute('aria-sort');
+                const ind = h.querySelector('.sort-indicator');
+                if (ind) ind.textContent = '';
+            });
+            th.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
+            if (indicator) indicator.textContent = asc ? '▲' : '▼';
+
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort((a, b) => {
+                const aVal = getCellValue(a, colIndex);
+                const bVal = getCellValue(b, colIndex);
+                return compareValues(aVal, bVal, asc);
+            });
+            rows.forEach(r => tbody.appendChild(r));
+        });
+    });
+
+    updateBulkButtonState();
+})();
+</script>
+{% endblock %}
+
 {% endblock %}

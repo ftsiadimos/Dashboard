@@ -79,6 +79,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // enable drag-and-drop reorder for every grid
     function makeGridSortable(grid) {
         let dragging = null;
+        let dropTarget = null;
+
+        const clearDropTarget = () => {
+            if (dropTarget) {
+                dropTarget.classList.remove('drop-target');
+                dropTarget = null;
+            }
+        };
+
         grid.querySelectorAll('.app-card').forEach(card => {
             card.setAttribute('draggable', 'true');
             card.addEventListener('dragstart', e => {
@@ -89,12 +98,25 @@ document.addEventListener('DOMContentLoaded', () => {
             card.addEventListener('dragend', () => {
                 card.classList.remove('dragging');
                 dragging = null;
+                clearDropTarget();
             });
             card.addEventListener('dragover', e => {
                 e.preventDefault();
+                if (card === dragging) return;
+                if (dropTarget && dropTarget !== card) {
+                    dropTarget.classList.remove('drop-target');
+                }
+                card.classList.add('drop-target');
+                dropTarget = card;
+            });
+            card.addEventListener('dragleave', () => {
+                if (card === dropTarget) {
+                    clearDropTarget();
+                }
             });
             card.addEventListener('drop', e => {
                 e.preventDefault();
+                clearDropTarget();
                 if (dragging && dragging !== card) {
                     grid.insertBefore(dragging, card);
                     // send order

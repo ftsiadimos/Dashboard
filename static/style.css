@@ -432,6 +432,11 @@ html { font-size: 15px; }
 /* dragging styles */
 .app-card.dragging { opacity: 0.5; }
 
+/* highlight card when dragging over it */
+.app-card.drop-target {
+    box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(79, 109, 245, 0.6);
+}
 
 .app-desc {
     font-size: 0.9rem;
@@ -509,8 +514,31 @@ html { font-size: 15px; }
     color: var(--text-muted);
     letter-spacing: 0.04em;
 }
+.table th .sort-indicator {
+    display: inline-block;
+    width: 1.1em;
+    text-align: center;
+    opacity: 0.6;
+    font-size: 0.9rem;
+}
 .table tbody tr:last-child td { border-bottom: none; }
 .table tbody tr:hover { background: var(--bg-hover); }
+
+.bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.04);
+}
+
+.bulk-actions label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
 
 .table-icon {
     width: 64px;

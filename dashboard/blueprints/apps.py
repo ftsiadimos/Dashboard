@@ -15,7 +15,13 @@ def apps_list():
         apps = (
             db.query(Application)
             .options(joinedload(Application.category))
-            .order_by(Application.sort_order, Application.title)
+            .outerjoin(Category)
+            .order_by(
+                Application.pinned.desc(),
+                Category.sort_order,
+                Category.name,
+                Application.title,
+            )
             .all()
         )
         categories = db.query(Category).order_by(Category.sort_order, Category.name).all()
@@ -182,4 +188,39 @@ def app_delete(app_id):
         if app:
             db.delete(app)
     flash("Application deleted.", "success")
+    return redirect(url_for("main.apps_list"))
+
+
+@main.route("/apps/bulk", methods=["POST"])
+def apps_bulk_update():
+    """Bulk-update a set of applications (category assignment)."""
+    app_ids = request.form.getlist("app_ids")
+    category_id = request.form.get("category_id") or None
+
+    if not app_ids:
+        flash("No applications selected.", "error")
+        return redirect(url_for("main.apps_list"))
+
+    # Convert IDs to ints, ignoring invalid values.
+    try:
+        app_ids = [int(i) for i in app_ids]
+    except ValueError:
+        flash("Invalid application selection.", "error")
+        return redirect(url_for("main.apps_list"))
+
+    # Allow unsetting the category by passing blank.
+    if category_id == "":
+        category_id = None
+    else:
+        try:
+            category_id = int(category_id)
+        except (ValueError, TypeError):
+            category_id = None
+
+    with get_db() as db:
+        apps = db.query(Application).filter(Application.id.in_(app_ids)).all()
+        for app in apps:
+            app.category_id = category_id
+
+    flash(f"Updated category for {len(apps)} application(s).", "success")
     return redirect(url_for("main.apps_list"))
