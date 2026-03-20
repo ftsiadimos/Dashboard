@@ -193,9 +193,8 @@ def app_delete(app_id):
 
 @main.route("/apps/bulk", methods=["POST"])
 def apps_bulk_update():
-    """Bulk-update or bulk-delete a set of applications."""
+    """Bulk-update a set of applications (category assignment)."""
     app_ids = request.form.getlist("app_ids")
-    action = request.form.get("action", "update")
     category_id = request.form.get("category_id") or None
 
     if not app_ids:
@@ -209,29 +208,17 @@ def apps_bulk_update():
         flash("Invalid application selection.", "error")
         return redirect(url_for("main.apps_list"))
 
+    # Allow unsetting the category by passing blank.
+    if category_id == "":
+        category_id = None
+    else:
+        try:
+            category_id = int(category_id)
+        except (ValueError, TypeError):
+            category_id = None
+
     with get_db() as db:
         apps = db.query(Application).filter(Application.id.in_(app_ids)).all()
-        if action == "delete":
-            deleted_count = 0
-            for app in apps:
-                if app.icon:
-                    icon_path = os.path.join(current_app.config["UPLOAD_FOLDER"], app.icon)
-                    if os.path.exists(icon_path):
-                        os.remove(icon_path)
-                db.delete(app)
-                deleted_count += 1
-            flash(f"Deleted {deleted_count} application(s).", "success")
-            return redirect(url_for("main.apps_list"))
-
-        # Default: category update
-        if category_id == "":
-            category_id = None
-        else:
-            try:
-                category_id = int(category_id)
-            except (ValueError, TypeError):
-                category_id = None
-
         for app in apps:
             app.category_id = category_id
 
