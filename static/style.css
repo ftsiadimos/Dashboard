@@ -490,6 +490,45 @@ html { font-size: 15px; }
 
 .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.82rem; }
 
+.bulk-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+}
+
+.bulk-actions label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.bulk-actions select {
+    min-width: 10.5rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text);
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.bulk-actions select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(79, 109, 245, 0.2);
+}
+
+.bulk-actions .btn {
+    min-height: 2.2rem;
+    padding: 0.45rem 0.9rem;
+}
+
 /* ── Tables ───────────────────────────────────────────────────────────────── */
 .table-wrap {
     background: var(--bg-surface);

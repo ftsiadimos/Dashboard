@@ -9,7 +9,7 @@
 </div>
 
 {% if apps %}
-<form method="post" action="{{ url_for('main.apps_bulk_update') }}">
+<form method="post" action="{{ url_for('main.apps_bulk_update') }}" id="bulkAppsForm">
     <div class="bulk-actions">
         <label>
             Change category for selected:
@@ -20,7 +20,8 @@
                 {% endfor %}
             </select>
         </label>
-        <button type="submit" class="btn btn-primary" id="bulkApplyBtn" disabled>Apply</button>
+        <button type="submit" class="btn btn-primary" id="bulkApplyBtn" name="action" value="update" disabled>Apply</button>
+        <button type="submit" class="btn btn-danger" id="bulkDeleteBtn" name="action" value="delete" disabled>Delete selected</button>
     </div>
 
     <div class="table-wrap">
@@ -108,11 +109,32 @@
     const selectAll = document.getElementById('selectAllApps');
     const appCheckboxes = Array.from(document.querySelectorAll('.app-select'));
     const bulkApplyBtn = document.getElementById('bulkApplyBtn');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const bulkAppsForm = document.getElementById('bulkAppsForm');
 
     function updateBulkButtonState() {
         const anySelected = appCheckboxes.some(cb => cb.checked);
         if (bulkApplyBtn) bulkApplyBtn.disabled = !anySelected;
+        if (bulkDeleteBtn) bulkDeleteBtn.disabled = !anySelected;
         if (selectAll) selectAll.checked = anySelected && appCheckboxes.every(cb => cb.checked);
+    }
+
+    if (bulkAppsForm) {
+        bulkAppsForm.addEventListener('submit', function (event) {
+            let action = null;
+            if (event.submitter) {
+                action = event.submitter.getAttribute('name') === 'action' ? event.submitter.value : null;
+            } else {
+                // Fallback for browsers without submitter support
+                action = document.activeElement ? document.activeElement.value : null;
+            }
+
+            if (action === 'delete') {
+                if (!confirm('Delete selected application(s)? This action cannot be undone.')) {
+                    event.preventDefault();
+                }
+            }
+        });
     }
 
     if (selectAll) {
@@ -123,6 +145,9 @@
     }
 
     appCheckboxes.forEach(cb => cb.addEventListener('change', updateBulkButtonState));
+
+    // There is only one confirmation dialog in submit handler above to prevent
+    // duplicate prompts in browsers that fire both click and submit events.
 
     headers.forEach((th) => {
         const colIndex = th.cellIndex;

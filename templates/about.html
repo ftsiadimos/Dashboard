@@ -5,6 +5,27 @@
 </div>
 
 <div class="form-card">
+    <h2>Application Summary</h2>
+    <p>
+        Dashboard is a lightweight web utility for managing applications, categories and settings through a clean, responsive interface. It supports quick app creation, favorites, dynamic widgets and integration-ready app monitoring.
+    </p>
+
+    <h2>Key Features</h2>
+    <ul>
+        <li>Manage applications and categories with CRUD operations</li>
+        <li>Configurable dashboard settings and GitHub integration</li>
+        <li>Simple, mobile-friendly UI with fast load times</li>
+    </ul>
+
+    <h2>Developer</h2>
+    <p>
+        Built and maintained by Fotios Tsiadimos.
+        <br>
+        GitHub: <a href="https://github.com/ftsiadimos" target="_blank" rel="noopener">ftsiadimos</a>
+    </p>
+
+    <hr>
+
     <p><strong>Version:</strong> {{ version }}</p>
     {% set gh = settings.get('github_url', 'https://github.com/ftsiadimos/dashboard.git') %}
     {% if gh %}
