@@ -88,7 +88,7 @@
             <div class="form-group">
                 <label for="api_value_template">Display Template</label>
                 <input type="text" id="api_value_template" name="api_value_template" value="{{ app.api_value_template if app else '' }}" class="form-input" placeholder="Status: {status} | Users: {data.count}">
-                <small class="form-hint">Use {path.to.key} for JSON fields, or a simple path like <code>data.status</code>. For text/html responses you may prefix with <code>regex:</code> and supply a capturing pattern (e.g. <code>regex:UPS Load</th>.*?<td[^>]*>([^<]+)</code>).</small>
+                <small class="form-hint">Use {path.to.key} for JSON fields, or a simple path like <code>data.status</code>. For text/html responses you may prefix with <code>regex:</code> and supply a capturing pattern (e.g. <code>regex:UPS Load</th>.*?<td[^>]*>([^<]+)</code>). You can also add a label before regex: <code>Power: regex:LOADPCT\s*:\s*([\d.]+)</code>.</small>
             </div>
             <div class="form-group">
                 <label for="api_interval">Refresh Interval (seconds)</label>

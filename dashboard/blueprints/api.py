@@ -70,6 +70,16 @@ def _extract_value(data, template):
             return m.group(1)
         return "—"
 
+    # support value prefix for regex templates, e.g. "Power: regex:LOADPCT..."
+    if isinstance(data, str) and isinstance(template, str) and "regex:" in template:
+        import re
+
+        prefix, pattern = template.split("regex:", 1)
+        m = re.search(pattern, data, re.S)
+        if m:
+            return f"{prefix}{m.group(1)}"
+        return prefix + "—"
+
     if "{" in template:
         import re
 
