@@ -28,6 +28,11 @@
                 </label>
             </div>
             <div class="form-group">
+                <label for="alert_keywords">Alert keywords</label>
+                <input type="text" id="alert_keywords" name="alert_keywords" value="{{ settings.get('alert_keywords', 'alert,alerts') }}" class="form-input" placeholder="alert,alerts,issues">
+                <small class="form-hint">Comma-separated words that should trigger alert badge behavior.</small>
+            </div>
+            <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" name="navbar_enabled" value="true" {% if settings.get('navbar_enabled', 'true') == 'true' %}checked{% endif %}>
                     <input type="hidden" name="navbar_enabled" value="false">

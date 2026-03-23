@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Live API stats for app tiles ─────────────────────────────────────────
+    const alertKeywords = (document.body.dataset.alertKeywords || 'alert,alerts').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+
     function fetchStats(card) {
         const appId = card.dataset.apiId;
         const metaEl = document.getElementById('meta-' + appId);
@@ -22,8 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const display = String(data.display || '');
 
                     // Blink the card when the display indicates active alerts (>0).
-                    // This uses a heuristic: the display must contain the word "alert" and a numeric count.
-                    const hasAlertWord = /\balerts?\b/i.test(display);
+                    // This uses a configurable list of keywords and numeric count.
+                    const normalized = display.toLowerCase();
+                    const hasAlertWord = alertKeywords.some(keyword => normalized.includes(keyword));
                     const counts = (display.match(/\d+/g) || [])
                         .map(n => parseInt(n, 10))
                         .filter(n => !Number.isNaN(n));

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
 </head>
-<body{% if settings.get('background_url') %} style="background-image: url('{{ settings.get('background_url') }}'); background-size: cover; background-position: center; background-attachment: fixed;"{% endif %}>
+<body data-alert-keywords="{{ settings.get('alert_keywords','alert,alerts') }}"{% if settings.get('background_url') %} style="background-image: url('{{ settings.get('background_url') }}'); background-size: cover; background-position: center; background-attachment: fixed;"{% endif %}>
     <!-- navbar is always output, but start collapsed when disabled in settings -->
     <nav class="navbar{% if settings.get('navbar_enabled', 'true') != 'true' %} collapsed{% endif %}">
         <a href="{{ url_for('main.index') }}" class="nav-brand">
