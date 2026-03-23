@@ -11,8 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Live API stats for app tiles ─────────────────────────────────────────
     function fetchStats(card) {
         const appId = card.dataset.apiId;
+        const metaEl = document.getElementById('meta-' + appId);
         const statsEl = document.getElementById('stats-' + appId);
-        if (!statsEl) return;
+        if (!metaEl) return;
 
         fetch('/api/app/' + encodeURIComponent(appId) + '/stats')
             .then(r => r.json())
@@ -33,11 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     card.classList.toggle('has-alerts-danger', isAlert && alertCount >= 3);
                     card.classList.toggle('has-alerts', isAlert);
 
-                    const statsVal = '<span class="stats-value">' + escapeHtml(display) + '</span>';
-                    statsEl.innerHTML = statsVal;
+                    if (statsEl) {
+                        statsEl.innerHTML = '<span class="stats-value">' + escapeHtml(display) + '</span>';
+                    }
+                    metaEl.textContent = display;
                 } else {
+                    if (statsEl) {
+                        statsEl.innerHTML = '<span class="stats-error">' + escapeHtml(data.display) + '</span>';
+                    }
                     card.classList.remove('has-alerts');
-                    statsEl.innerHTML = '<span class="stats-error">' + escapeHtml(data.display) + '</span>';
+                    metaEl.textContent = String(data.display || 'API error');
                 }
             })
             .catch(() => {
