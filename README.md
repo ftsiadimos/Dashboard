@@ -11,7 +11,7 @@ This is a self-hosted web dashboard built with Python + Flask that lets you mana
 ## Screenshot
 
 <p align="center">
-  <img src="mis/image.png" alt="Dashboard" width="90%" />
+  <img src="mis/image.webp" alt="Dashboard" width="90%" />
 </p>
 <p align="center"><em>Dashboard</em></p>
 
