@@ -4,6 +4,7 @@
     <h1>Settings</h1>
 </div>
 
+<div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
 <div class="form-card">
     <form method="post">
         <div class="form-grid">
@@ -44,5 +45,32 @@
             <button type="submit" class="btn btn-primary">Save Settings</button>
         </div>
     </form>
+</div>
+
+<div class="form-card">
+    <h3 class="form-section-title">Apps Backup / Restore</h3>
+    <p class="form-section-desc">Export your apps/categories to JSON, or import a JSON payload to restore/update your apps.</p>
+
+    <div class="form-actions" style="margin-bottom: 1rem;">
+        <a href="{{ url_for('main.export_apps') }}" class="btn btn-primary">Export Applications (JSON)</a>
+    </div>
+
+    <form method="post" action="{{ url_for('main.import_apps') }}" enctype="multipart/form-data">
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label for="import_file">Import from file</label>
+                <input type="file" id="import_file" name="import_file" accept="application/json" class="form-input">
+                <small class="form-hint">Upload a JSON file created by Export.</small>
+            </div>
+            <div class="form-group full-width">
+                <label for="import_json">Or paste JSON payload</label>
+                <textarea id="import_json" name="import_json" class="form-input" rows="8" placeholder='{"categories": [...], "applications": [...]}'></textarea>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Import Applications</button>
+        </div>
+    </form>
+</div>
 </div>
 {% endblock %}
