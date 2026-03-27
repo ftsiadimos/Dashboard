@@ -1,6 +1,6 @@
 # Dashboard
 
-This is a self-hosted web dashboard built with Python + Flask that lets you manage and launch your web applications in a single place.
+A lightweight, self-hosted application launcher and monitoring dashboard built with Python + Flask. It is designed to be simple to run, easy to configure, and extendable via API tiles.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python">
@@ -9,12 +9,21 @@ This is a self-hosted web dashboard built with Python + Flask that lets you mana
   <a href="https://ghcr.io/ftsiadimos/dashboard"><img src="https://img.shields.io/badge/GHCR-available-blue?style=flat-square&logo=github" alt="GHCR Available"></a>
   <a href="https://github.com/ftsiadimos/lightdockerwebui/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT"></a>
 </p>
-## Screenshot
+
 
 <p align="center">
   <img src="mis/image.webp" alt="Dashboard" width="90%" />
 </p>
 <p align="center"><em>Dashboard</em></p>
+
+---
+
+## Quick start
+
+1. Choose a deploy option: Docker, Docker Compose, or source install.
+2. Start, open http://localhost:6008, and configure via Settings.
+3. Add apps to the dashboard and optionally enable API tiles for live statistics.
+4. Set alert keywords in Settings (default: `alert,alerts`) to watch for anomalies.
 
 ---
 
@@ -111,22 +120,6 @@ flask run --host=0.0.0.0 --port=6008
 
 ---
 
-## Configuration
-
-The application version is stored in the `VERSION` file and shown on the About page. To update it, bump the value there.
-
-Environment variables:
-
-| Variable | Default | Description |
-|---|---|---|
-| `SECRET_KEY` | random | Flask secret key |
-| `APP_TITLE` | Dashboard | Title shown in navbar and browser tab |
-
-*Navigation visibility can be toggled via the web UI; there is no separate environment variable.*
-| `APP_PORT` | 5000 | Port to listen on |
-| `APP_HOST` | 0.0.0.0 | Host to bind to |
-| `DATABASE_URL` | sqlite:///data/dashboard.db | Database URI |
-| `GITHUB_URL` | — | (defaults to https://github.com/ftsiadimos/dashboard.git). Displayed on the About page. |
 
 ## Project Structure
 
