@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
 </head>
-{% set background = settings.get('background_url') or url_for('static', filename='blue.webp') %}
+{% set background = settings.get('background_url') or url_for('static', filename='wowblue.webp') %}
 <body data-alert-keywords="{{ settings.get('alert_keywords','alert,alerts') }}" style="background-image: url('{{ background }}'); background-size: cover; background-position: center; background-attachment: fixed;">
     <!-- navbar is always output, but start collapsed when disabled in settings -->
     <nav class="navbar{% if settings.get('navbar_enabled', 'true') != 'true' %} collapsed{% endif %}">
