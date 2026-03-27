@@ -2,12 +2,13 @@
 
 This is a self-hosted web dashboard built with Python + Flask that lets you manage and launch your web applications in a single place.
 
-
-![Python](https://img.shields.io/badge/Python-3.10+-blue) ![Flask](https://img.shields.io/badge/Flask-3.x-green)
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python">
+  <img src="https://img.shields.io/badge/Flask-3.x-green" alt="Flask">
   <a href="https://hub.docker.com/r/ftsiadimos/lightdockerwebui"><img src="https://img.shields.io/docker/pulls/ftsiadimos/dashboard?style=flat-square&logo=docker" alt="Docker Pulls"></a>
   <a href="https://ghcr.io/ftsiadimos/dashboard"><img src="https://img.shields.io/badge/GHCR-available-blue?style=flat-square&logo=github" alt="GHCR Available"></a>
   <a href="https://github.com/ftsiadimos/lightdockerwebui/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT"></a>
-
+</p>
 ## Screenshot
 
 <p align="center">
@@ -20,18 +21,21 @@ This is a self-hosted web dashboard built with Python + Flask that lets you mana
 ## Features
 
 - **Application Management** — Add, edit, delete, and organize web applications
-- **Categories** — Group applications into categories
-- **Pin Favorites** — Pin important apps to the top of the dashboard
-- **Custom Icons** — Upload icons for each application
-- **Color Coding** — Assign colors to visually distinguish apps (picker and text input are synced)
-- **API Integration** — Fleximple API lets any HTTP endpoint drive a tile with templated data
-- **Search Bar** — Configurable web search integrated into the dashboard
-- **Hideable Top Bar** — turn off the navigation header from settings for a minimalist look
-- **Responsive Grid** — Configurable column count with responsive breakpoints
-- **Background Image** — Set a custom background image URL
-- **Dark Theme** — Modern dark UI out of the box
-- **SQLite Storage** — Lightweight, zero-config database
-- **Docker Ready** — Dockerfile and docker-compose included
+- **Category Support** — Create, edit, reorder, and delete categories with per-category app grouping
+- **Pin Favorites** — Pin important applications to keep them at the top
+- **Custom Icons** — Upload custom icon files per app or use icon URLs
+- **Color Coding** — Assign a color to apps for visual grouping (picker and hex input synced)
+- **API Tiles** — Poll an API endpoint with support for method, headers, payload, interval, and template formatting
+- **Blinking Alert Cards** — Highlight app cards with pulsating warning/danger state when alert keywords + counts trigger
+- **Bulk App Updates** — Assign multiple apps to a category in one action
+- **Import/Export JSON** — Export apps/categories to JSON and import from JSON in settings
+- **Search Provider** — Custom search provider and in-dashboard search toggle in settings
+- **Hideable Navbar** — Toggle top navigation visibility for a minimalist dashboard mode
+- **Responsive Grid** — Automatic column layout with mobile-friendly breakpoints
+- **Background Image** — Customizable dashboard background image URL
+- **Dark Theme** — Built-in dark styling
+- **SQLite Storage** — Local persistent storage with automatic DB setup
+- **Docker Support** — Includes `Dockerfile` and `docker-compose.yml` for containerized deployment
 
 ## 📦 Installation Options
 
