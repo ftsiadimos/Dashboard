@@ -548,6 +548,15 @@ html { font-size: 15px; }
     font-size: 0.9rem;
 }
 
+.bulk-actions select {
+    height: 2.4rem;
+    background: #555;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0 0.5rem;
+}
+
 .table-icon {
     width: 64px;
     height: 64px;
