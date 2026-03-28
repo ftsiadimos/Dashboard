@@ -108,8 +108,11 @@
 <script>
     const colorInput = document.getElementById('color');
     const colorText = document.getElementById('colorText');
+    const iconInput = document.getElementById('icon');
+
     // when picker changes update text
     colorInput.addEventListener('input', () => { colorText.value = colorInput.value; });
+
     // allow typing hex value too
     colorText.addEventListener('input', () => { 
         // simple sanity: prefix with '#' if missing
@@ -119,5 +122,44 @@
         }
         colorInput.value = val;
     });
+
+    // live preview for uploaded icon (in edit form, replacing existing icon preview)
+    if (iconInput) {
+        iconInput.addEventListener('change', (event) => {
+            const file = event.target.files && event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                // Use existing current-icon block if present, otherwise create a new one.
+                let preview = document.querySelector('.current-icon');
+                if (!preview) {
+                    preview = document.createElement('div');
+                    preview.className = 'current-icon';
+                    iconInput.parentNode.appendChild(preview);
+                }
+
+                let label = preview.querySelector('span');
+                if (!label) {
+                    label = document.createElement('span');
+                    preview.appendChild(label);
+                }
+                label.textContent = 'Preview:';
+
+                let img = preview.querySelector('img');
+                if (!img) {
+                    img = document.createElement('img');
+                    img.width = 32;
+                    img.height = 32;
+                    preview.appendChild(img);
+                }
+                img.src = e.target.result;
+                preview.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 </script>
 {% endblock %}
