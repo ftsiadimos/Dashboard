@@ -61,6 +61,7 @@ def app_add():
         api_payload = request.form.get("api_payload", "").strip()
         api_value_template = request.form.get("api_value_template", "").strip()
         api_interval = int(request.form.get("api_interval", 30) or 30)
+        api_verify = bool(request.form.get("api_verify"))
 
         try:
             with get_db() as db:
@@ -78,6 +79,7 @@ def app_add():
                     api_payload=api_payload,
                     api_value_template=api_value_template,
                     api_interval=api_interval,
+                    api_verify=api_verify,
                 )
                 db.add(app)
             flash("Application added successfully.", "success")
@@ -143,6 +145,7 @@ def app_edit(app_id):
         api_payload = request.form.get("api_payload", "").strip()
         api_value_template = request.form.get("api_value_template", "").strip()
         api_interval = int(request.form.get("api_interval", 30) or 30)
+        api_verify = bool(request.form.get("api_verify"))
 
         try:
             with get_db() as db:
@@ -159,6 +162,7 @@ def app_edit(app_id):
                 app.api_payload = api_payload
                 app.api_value_template = api_value_template
                 app.api_interval = api_interval
+                app.api_verify = api_verify
             flash("Application updated successfully.", "success")
             return redirect(url_for("main.apps_list"))
         except Exception as exc:

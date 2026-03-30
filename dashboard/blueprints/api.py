@@ -140,7 +140,8 @@ def api_app_stats(app_id):
     try:
         method = app.api_method.upper() if app.api_method else "GET"
         # prepare request kwargs; include payload if provided for non-GET methods
-        kwargs = {"headers": headers, "timeout": 10, "verify": True}
+        verify = getattr(app, "api_verify", True)
+        kwargs = {"headers": headers, "timeout": 10, "verify": verify}
         payload_val = app.api_payload
         # special-case Nginx Proxy Manager: perform login flow if creds provided
         if app.api_url.endswith("/api/nginx/proxy-hosts") and payload_val:
@@ -156,6 +157,8 @@ def api_app_stats(app_id):
                 ident = creds.get("identity") or creds.get("email")
                 secret = creds.get("secret") or creds.get("password")
                 verify = not creds.get("ignore_tls", False)
+                if not getattr(app, "api_verify", True):
+                    verify = False
                 data = _npm_get_hosts(
                     app.api_url.rsplit("/api/nginx/proxy-hosts", 1)[0] + "/",
                     ident,
@@ -184,8 +187,13 @@ def api_app_stats(app_id):
         try:
             data = resp.json()
         except ValueError:
-            # response isn't JSON – keep full text so regex templates work
-            data = resp.text
+            # response isn't JSON – try to decode invalid bytes instead of failing
+            body = None
+            try:
+                body = resp.content.decode(resp.encoding or "utf-8", errors="replace")
+                data = json.loads(body)
+            except Exception:
+                data = body if body is not None else resp.text
 
         display = _extract_value(data, app.api_value_template)
         return jsonify({"ok": True, "display": display})

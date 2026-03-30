@@ -90,6 +90,12 @@
                 <input type="text" id="api_value_template" name="api_value_template" value="{{ app.api_value_template if app else '' }}" class="form-input" placeholder="Status: {status} | Users: {data.count}">
                 <small class="form-hint">Use {path.to.key} for JSON fields, or a simple path like <code>data.status</code>. For text/html responses you may prefix with <code>regex:</code> and supply a capturing pattern (e.g. <code>regex:UPS Load</th>.*?<td[^>]*>([^<]+)</code>). You can also add a label before regex: <code>Power: regex:LOADPCT\s*:\s*([\d.]+)</code>.</small>
             </div>
+            <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="api_verify" name="api_verify" value="1" {% if app and not app.api_verify %}{% else %}checked{% endif %}>
+                    <span>Verify SSL/TLS certificate</span>
+                </label>
+            </div>
             <div class="form-group">
                 <label for="api_interval">Refresh Interval (seconds)</label>
                 <input type="number" id="api_interval" name="api_interval" value="{{ app.api_interval if app else 30 }}" class="form-input" min="5" max="3600" placeholder="30">

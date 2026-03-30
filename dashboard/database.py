@@ -46,6 +46,7 @@ class Application(db.Model):
     api_value_template = db.Column(db.Text, default="")
     api_interval = db.Column(db.Integer, default=30)
     api_payload = db.Column(db.Text, default="")
+    api_verify = db.Column(db.Boolean, default=True)
 
     created_at = db.Column(db.DateTime, server_default=func.current_timestamp())
 
@@ -102,6 +103,7 @@ def _migrate_applications_table(engine):
             ("api_value_template", "TEXT DEFAULT ''"),
             ("api_interval", "INTEGER DEFAULT 30"),
             ("api_payload", "TEXT DEFAULT ''"),
+            ("api_verify", "INTEGER DEFAULT 1"),
         ]
 
         for col_name, col_def in migrations:
