@@ -35,16 +35,54 @@ def _extract_value(data, template):
       - Multiple fields:  ``Status: {status} | Users: {data.users.total}``
     """
     def _resolve(obj, path):
+        def _resolve_key(target, key_path):
+            for part in key_path.split("."):
+                if part == "_len" and isinstance(target, list):
+                    return len(target)
+                if isinstance(target, dict):
+                    target = target.get(part)
+                elif isinstance(target, list):
+                    try:
+                        target = target[int(part)]
+                    except (ValueError, IndexError):
+                        return None
+                else:
+                    return None
+            return target
+
         for key in path.split("."):
             if key == "_len" and isinstance(obj, list):
                 return len(obj)
-            if isinstance(obj, dict):
-                obj = obj.get(key)
-            elif isinstance(obj, list):
+
+            if isinstance(obj, list):
+                if key.startswith("max_by(") and key.endswith(")"):
+                    field = key[len("max_by("):-1]
+                    try:
+                        obj = max(obj, key=lambda item: _resolve_key(item, field) or "")
+                    except ValueError:
+                        return None
+                    continue
+                if key.startswith("min_by(") and key.endswith(")"):
+                    field = key[len("min_by("):-1]
+                    try:
+                        obj = min(obj, key=lambda item: _resolve_key(item, field) or "")
+                    except ValueError:
+                        return None
+                    continue
+                if key == "first":
+                    obj = obj[0] if obj else None
+                    continue
+                if key == "last":
+                    obj = obj[-1] if obj else None
+                    continue
                 try:
                     obj = obj[int(key)]
                 except (ValueError, IndexError):
                     return None
+                continue
+
+            if isinstance(obj, dict):
+                obj = obj.get(key)
             else:
                 return None
         return obj
