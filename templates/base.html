@@ -8,7 +8,7 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
 </head>
 {% set background = settings.get('background_url') or url_for('static', filename='wowblue.webp') %}
-<body data-alert-keywords="{{ settings.get('alert_keywords','alert,alerts') }}" style="background-image: url('{{ background }}'); background-size: cover; background-position: center; background-attachment: fixed;">
+<body data-alert-keywords="{{ settings.get('alert_keywords','alert,alerts') }}" data-terminal-key="{{ settings.get('terminal_key', '`') }}" data-terminal-height="{{ settings.get('terminal_height', '400') }}" data-terminal-opacity="{{ settings.get('terminal_opacity', '0.97') }}" data-terminal-font-size="{{ settings.get('terminal_font_size', '14') }}" data-terminal-font-family="{{ settings.get('terminal_font_family', 'monospace') }}" data-terminal-accent="{{ settings.get('terminal_accent', '#6c8ebf') }}" data-terminal-anim-speed="{{ settings.get('terminal_anim_speed', '280') }}" style="background-image: url('{{ background }}'); background-size: cover; background-position: center; background-attachment: fixed;">
     <!-- navbar is always output, but start collapsed when disabled in settings -->
     <nav class="navbar{% if settings.get('navbar_enabled', 'true') != 'true' %} collapsed{% endif %}">
         <a href="{{ url_for('main.index') }}" class="nav-brand">
@@ -45,5 +45,20 @@
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>
     {% block scripts %}{% endblock %}
+
+    <!-- Quake-style drop-down terminal -->
+    <div id="quake-terminal" class="quake-terminal" aria-hidden="true">
+        <div class="qt-header">
+            <span class="qt-title">&#x1F5A5; Terminal Console</span>
+            <span class="qt-hint">Press <kbd id="qt-key-hint">`</kbd> or ESC to close</span>
+            <button id="qt-close-btn" class="qt-close" aria-label="Close terminal">&times;</button>
+        </div>
+        <div class="qt-output" id="qt-output" role="log" aria-live="polite"></div>
+        <div class="qt-input-row">
+            <span class="qt-prompt">&gt;</span>
+            <input type="text" id="qt-input" class="qt-input" placeholder="Type 'help' for commands…" autocomplete="off" spellcheck="false">
+        </div>
+        <div id="qt-resize-handle" class="qt-resize-handle" title="Drag to resize"></div>
+    </div>
 </body>
 </html>

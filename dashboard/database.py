@@ -64,6 +64,18 @@ class Setting(db.Model):
     value = db.Column(db.Text, nullable=False)
 
 
+class CustomCommand(db.Model):
+    __tablename__ = "custom_commands"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Text, nullable=False, unique=True)
+    method = db.Column(db.Text, default="GET")
+    url = db.Column(db.Text, nullable=False)
+    headers = db.Column(db.Text, default="")
+    payload = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, server_default=func.current_timestamp())
+
+
 @event.listens_for(Engine, "connect")
 def _set_sqlite_pragma(dbapi_connection, connection_record):
     # Ensure WAL mode + foreign key support for sqlite
@@ -84,6 +96,13 @@ def _ensure_default_settings(session):
         "search_enabled": "true",
         "navbar_enabled": "true",
         "columns": "4",
+        "terminal_key": "`",
+        "terminal_height": "400",
+        "terminal_opacity": "0.97",
+        "terminal_font_size": "14",
+        "terminal_font_family": "monospace",
+        "terminal_accent": "#6c8ebf",
+        "terminal_anim_speed": "280",
     }
     for key, value in defaults.items():
         if key not in existing:

@@ -45,6 +45,7 @@ A lightweight, self-hosted application launcher and monitoring dashboard built w
 - **Dark Theme** — Built-in dark styling
 - **SQLite Storage** — Local persistent storage with automatic DB setup
 - **Docker Support** — Includes `Dockerfile` and `docker-compose.yml` for containerized deployment
+- **Quake-style Drop-down Terminal** — Press a configurable hotkey (default `` ` ``) to slide down an in-browser terminal console with app launching, custom HTTP requests, and command history
 
 ## 📦 Installation Options
 
@@ -233,6 +234,61 @@ Display Template   regex:<title>([^<]+)</title>
 
 The template above grabs whatever is inside the `<title>` tag of the returned
 HTML.
+
+---
+
+## Terminal Console
+
+Press the configured hotkey (default: `` ` ``) from any page to slide a Quake-style terminal panel down from the top of the screen. Press the key again or hit `Esc` to close it.
+
+<p align="center">
+  <img src="mis/terminal-image.webp" alt="Terminal Console" width="90%" />
+</p>
+<p align="center"><em>Quake-style drop-down terminal</em></p>
+
+### Commands
+
+| Command | Description |
+|---|---|
+| `help` | Show all available commands |
+| `list` | List all app tiles as clickable rows — click to trigger the tile's API call |
+| `run <name>` | Run a tile's API call by name (partial match) |
+| `curl [opts] <url>` | Execute an ad-hoc HTTP request directly from the terminal |
+| `curl … \| jq <filter>` | Pipe the response through a client-side jq filter (e.g. `\| jq .total`) |
+| `save <name> curl …` | Save a curl command under a name for later replay |
+| `list-custom` | List all saved custom commands as clickable rows |
+| `run-custom <name>` | Re-run a saved custom command by name (partial match) |
+| `delete-custom <name>` | Delete a saved custom command by name |
+| `clear` | Clear the terminal output |
+
+### curl flags
+
+| Flag | Description |
+|---|---|
+| `-X <METHOD>` | HTTP method (default: `GET`) |
+| `-H <header>` | Add a request header, e.g. `-H "Authorization: Bearer token"` (repeatable) |
+| `-d <body>` | Request body (JSON or plain text) |
+
+### Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `` ` `` (configurable) | Toggle terminal open / closed |
+| `Esc` | Close terminal |
+| `↑` / `↓` | Walk through command history |
+| `Tab` | Autocomplete command or app name |
+
+### Appearance & Settings
+
+Open **Settings → Terminal Console** to customise:
+
+- **Trigger key** — replace the default `` ` `` with any key
+- **Height** — default panel height in pixels (also resizable by dragging the bottom edge)
+- **Opacity** — background opacity (0 – 1)
+- **Font size** — terminal font size in px
+- **Font family** — monospace font (e.g. `monospace`, `"Fira Code"`, `"Courier New"`)
+- **Accent colour** — colour used for the title bar, prompt, and border
+- **Animation speed** — slide-down duration in milliseconds
 
 ---
 

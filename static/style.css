@@ -746,3 +746,153 @@ html { font-size: 15px; }
     #navbarToggle { display: block; }
     .nav-brand span { display: none; }
 }
+
+/* ── Quake Terminal ───────────────────────────────────────────────────────── */
+.quake-terminal.qt-open {
+    transform: translateY(0);
+}
+.qt-header {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 1rem;
+    background: rgba(0, 0, 0, 0.45);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    gap: 1rem;
+    flex-shrink: 0;
+}
+.qt-title {
+    font-weight: bold;
+    color: var(--qt-accent, var(--primary, #6c8ebf));
+    flex: 0 0 auto;
+}
+.qt-hint {
+    font-size: 0.78rem;
+    color: #5a6a8a;
+    flex: 1;
+}
+.qt-hint kbd {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 3px;
+    padding: 0 5px;
+    font-size: 0.75rem;
+    font-family: inherit;
+}
+.qt-close {
+    background: none;
+    border: none;
+    color: #5a6a8a;
+    font-size: 1.3rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 0.25rem;
+    flex-shrink: 0;
+}
+.qt-close:hover { color: #ff6b6b; }
+
+.qt-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 1rem;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #2a3450 transparent;
+}
+.qt-output::-webkit-scrollbar { width: 5px; }
+.qt-output::-webkit-scrollbar-thumb { background: #2a3450; border-radius: 3px; }
+
+.qt-line {
+    padding: 1px 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.55;
+}
+.qt-line.qt-info    { color: #7ec8e3; }
+.qt-line.qt-success { color: #78dba4; }
+.qt-line.qt-error   { color: #ff7a7a; }
+.qt-line.qt-cmd     { color: #ffd080; }
+.qt-line.qt-muted   { color: #495570; }
+
+.qt-app-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    color: #7eaadd;
+    padding: 1px 6px;
+    border-radius: 3px;
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+}
+.qt-app-row:hover {
+    background: rgba(100, 180, 255, 0.12);
+    color: #c8e8ff;
+}
+.qt-app-icon { font-size: 0.7rem; opacity: 0.6; }
+.qt-muted-inline { color: #495570; font-size: 0.82em; margin-left: 0.3em; }
+
+.qt-custom-row { display: flex; align-items: center; gap: 0.4rem; }
+.qt-del-btn {
+    color: #5a4a4a;
+    cursor: pointer;
+    padding: 0 4px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    flex-shrink: 0;
+}
+.qt-del-btn:hover { color: #ff6b6b; background: rgba(255, 80, 80, 0.1); }
+
+.qt-input-row {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+    gap: 0.6rem;
+}
+.qt-prompt {
+    color: var(--qt-accent, var(--primary, #6c8ebf));
+    font-weight: bold;
+    font-size: 1rem;
+    user-select: none;
+}
+.qt-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #c8d3f5;
+    font-family: inherit;
+    font-size: inherit;
+    caret-color: var(--primary, #6c8ebf);
+}
+.qt-input::placeholder { color: #2e3a52; }
+
+.qt-resize-handle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    cursor: ns-resize;
+    background: transparent;
+    z-index: 1;
+    transition: background 0.15s;
+}
+.qt-resize-handle:hover,
+.qt-resize-handle.resizing {
+    background: rgba(108, 142, 191, 0.35);
+}
+/* panel must be position:relative so the handle sits at exact bottom */
+.quake-terminal { position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
+    background: rgba(8,10,18,0.97); border-bottom: 2px solid var(--qt-accent, var(--primary,#6c8ebf));
+    font-family: 'Courier New',Courier,monospace; font-size: 0.875rem; color: #c8d3f5;
+    display: flex; flex-direction: column;
+    transform: translateY(-100%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 6px 40px rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+}
+

@@ -10,13 +10,21 @@ from dashboard.utils import get_settings
 @main.route("/settings", methods=["GET", "POST"])
 def settings_page():
     if request.method == "POST":
-        # we persist a handful of settings; boolean flags need special handling
-        keys = ["title", "background_url", "search_provider", "search_enabled", "navbar_enabled", "alert_keywords"]
+        section = request.form.get("form_section", "dashboard")
+
+        section_keys = {
+            "dashboard": ["title", "background_url", "search_provider",
+                          "search_enabled", "navbar_enabled", "alert_keywords"],
+            "terminal":  ["terminal_key", "terminal_height", "terminal_opacity",
+                          "terminal_font_size", "terminal_font_family",
+                          "terminal_accent", "terminal_anim_speed"],
+        }
+        keys = section_keys.get(section, list(section_keys["dashboard"]))
+        bool_keys = {"search_enabled", "navbar_enabled"}
+
         with get_db() as db:
             for key in keys:
-                if key in ("search_enabled", "navbar_enabled"):
-                    # checkbox + hidden field means request.form.get will always return the
-                    # first value we send ("false"), so normalize explicitly
+                if key in bool_keys:
                     value = "true" if request.form.get(key) == "true" else "false"
                 else:
                     value = request.form.get(key, "").strip()

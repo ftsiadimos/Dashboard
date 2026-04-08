@@ -7,6 +7,7 @@
 <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
 <div class="form-card">
     <form method="post">
+        <input type="hidden" name="form_section" value="dashboard">
         <div class="form-grid">
             <div class="form-group">
                 <label for="title">Dashboard Title</label>
@@ -72,5 +73,126 @@
         </div>
     </form>
 </div>
+
+<div class="form-card" style="margin-top: 1rem;">
+    <h3 class="form-section-title">Terminal Console</h3>
+    <p class="form-section-desc">Configure the drop-down terminal panel (activated by a key press).</p>
+    <form method="post">
+        <input type="hidden" name="form_section" value="terminal">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="terminal_key_input">Trigger Key</label>
+                <input type="text" id="terminal_key_input" name="terminal_key"
+                       value="{{ settings.get('terminal_key', '`') }}"
+                       class="form-input" placeholder="Click here and press a key…"
+                       readonly style="cursor: pointer;">
+                <small class="form-hint">Click the field then press any key to set it. Default: <code>`</code> (backtick / tilde key).</small>
+            </div>
+            <div class="form-group">
+                <label for="terminal_height">Terminal Height (px)</label>
+                <input type="number" id="terminal_height" name="terminal_height"
+                       value="{{ settings.get('terminal_height', '400') }}"
+                       class="form-input" min="150" max="900" step="10">
+                <small class="form-hint">Default height of the panel (150–900 px). Can also be dragged live.</small>
+            </div>
+            <div class="form-group">
+                <label for="terminal_opacity">Background Opacity</label>
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <input type="range" id="terminal_opacity" name="terminal_opacity"
+                           value="{{ settings.get('terminal_opacity', '0.97') }}"
+                           class="form-input" min="0.2" max="1" step="0.01"
+                           style="flex:1;padding:0.25rem 0;" oninput="document.getElementById('qt_opacity_val').textContent=parseFloat(this.value).toFixed(2)">
+                    <span id="qt_opacity_val" style="min-width:2.5rem;text-align:right;font-variant-numeric:tabular-nums;">{{ "%.2f"|format(settings.get('terminal_opacity','0.97')|float) }}</span>
+                </div>
+                <small class="form-hint">0.20 = mostly transparent · 1.00 = fully opaque.</small>
+            </div>
+            <div class="form-group">
+                <label for="terminal_font_size">Font Size (px)</label>
+                <input type="number" id="terminal_font_size" name="terminal_font_size"
+                       value="{{ settings.get('terminal_font_size', '14') }}"
+                       class="form-input" min="10" max="24" step="1">
+                <small class="form-hint">Terminal text size in pixels (10–24).</small>
+            </div>
+            <div class="form-group">
+                <label for="terminal_font_family">Font Family</label>
+                <select id="terminal_font_family" name="terminal_font_family" class="form-input">
+                    {% set cur_font = settings.get('terminal_font_family', 'monospace') %}
+                    <option value="monospace"  {% if cur_font == 'monospace'  %}selected{% endif %}>Monospace (Courier New)</option>
+                    <option value="sans"       {% if cur_font == 'sans'       %}selected{% endif %}>Sans-serif (System UI)</option>
+                    <option value="serif"      {% if cur_font == 'serif'      %}selected{% endif %}>Serif (Georgia)</option>
+                </select>
+                <small class="form-hint">Font used inside the terminal panel.</small>
+            </div>
+            <div class="form-group">
+                <label for="terminal_accent">Accent Colour</label>
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <input type="color" id="terminal_accent" name="terminal_accent"
+                           value="{{ settings.get('terminal_accent', '#6c8ebf') }}"
+                           style="width:3rem;height:2.2rem;border:none;background:none;cursor:pointer;padding:0;">
+                    <input type="text" id="terminal_accent_hex" class="form-input"
+                           value="{{ settings.get('terminal_accent', '#6c8ebf') }}"
+                           placeholder="#6c8ebf" style="flex:1;">
+                </div>
+                <small class="form-hint">Colour used for the title, prompt <code>&gt;</code>, and border.</small>
+            </div>
+            <div class="form-group">
+                <label for="terminal_anim_speed">Slide Animation (ms)</label>
+                <input type="number" id="terminal_anim_speed" name="terminal_anim_speed"
+                       value="{{ settings.get('terminal_anim_speed', '280') }}"
+                       class="form-input" min="0" max="1000" step="10">
+                <small class="form-hint">Slide-in/out duration in milliseconds. 0 = instant.</small>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+    </form>
+</div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+// Capture keypress for terminal trigger key setting
+const termKeyInput = document.getElementById('terminal_key_input');
+if (termKeyInput) {
+    termKeyInput.addEventListener('keydown', function(e) {
+        e.preventDefault();
+        if (['Shift','Control','Alt','Meta','CapsLock','Tab'].includes(e.key)) return;
+        this.value = e.key;
+        this.blur();
+    });
+    termKeyInput.addEventListener('focus', function() {
+        this.value = '';
+        this.placeholder = 'Press any key…';
+    });
+    termKeyInput.addEventListener('blur', function() {
+        this.placeholder = 'Click here and press a key…';
+        if (!this.value) this.value = '`';
+    });
+}
+
+// Sync colour picker <-> hex text field
+const accentPicker = document.getElementById('terminal_accent');
+const accentHex    = document.getElementById('terminal_accent_hex');
+if (accentPicker && accentHex) {
+    accentPicker.addEventListener('input', () => {
+        accentHex.value = accentPicker.value;
+        // rename the real submit value to the hex field so form posts accentHex
+    });
+    accentHex.addEventListener('input', () => {
+        if (/^#[0-9a-fA-F]{6}$/.test(accentHex.value)) {
+            accentPicker.value = accentHex.value;
+        }
+    });
+    // On submit, copy hex field value back into the colour input so the right value posts
+    accentPicker.closest('form').addEventListener('submit', () => {
+        accentPicker.value = /^#[0-9a-fA-F]{6}$/.test(accentHex.value)
+            ? accentHex.value : accentPicker.value;
+        // disable hex field so only accentPicker (named terminal_accent) posts
+        accentHex.disabled = true;
+    });
+}
+</script>
+{% endblock %}
+

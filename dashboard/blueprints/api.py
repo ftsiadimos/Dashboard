@@ -4,7 +4,7 @@ import requests as http_requests
 from flask import current_app, jsonify, request
 
 from dashboard.blueprints import bp as main
-from dashboard.database import Application, Category, get_db
+from dashboard.database import Application, Category, CustomCommand, get_db
 
 
 @main.route("/api/reorder", methods=["POST"])
@@ -238,3 +238,102 @@ def api_app_stats(app_id):
 
     except http_requests.RequestException as exc:
         return jsonify({"ok": False, "display": f"Error: {exc.__class__.__name__}"})
+
+
+@main.route("/api/apps")
+def api_apps():
+    """Return all apps that have an API URL configured (used by the terminal console)."""
+    with get_db() as db:
+        apps = db.query(Application).order_by(Application.sort_order, Application.title).all()
+    return jsonify([
+        {"id": a.id, "title": a.title, "api_url": a.api_url}
+        for a in apps
+        if a.api_url
+    ])
+
+
+@main.route("/api/custom/commands", methods=["GET"])
+def custom_commands_list():
+    with get_db() as db:
+        cmds = db.query(CustomCommand).order_by(CustomCommand.name).all()
+    return jsonify([
+        {"id": c.id, "name": c.name, "method": c.method,
+         "url": c.url, "headers": c.headers, "payload": c.payload}
+        for c in cmds
+    ])
+
+
+@main.route("/api/custom/commands", methods=["POST"])
+def custom_commands_save():
+    data = request.get_json()
+    if not data or not data.get("name") or not data.get("url"):
+        return jsonify({"error": "name and url are required"}), 400
+    name    = data["name"].strip()
+    url     = data["url"].strip()
+    method  = (data.get("method") or "GET").upper()
+    headers = data.get("headers") or ""
+    payload = data.get("payload") or ""
+    with get_db() as db:
+        existing = db.query(CustomCommand).filter_by(name=name).first()
+        if existing:
+            existing.method  = method
+            existing.url     = url
+            existing.headers = headers
+            existing.payload = payload
+        else:
+            db.add(CustomCommand(name=name, method=method, url=url,
+                                 headers=headers, payload=payload))
+    return jsonify({"status": "ok"})
+
+
+@main.route("/api/custom/commands/<int:cmd_id>", methods=["DELETE"])
+def custom_commands_delete(cmd_id):
+    with get_db() as db:
+        cmd = db.get(CustomCommand, cmd_id)
+        if not cmd:
+            return jsonify({"error": "not found"}), 404
+        db.delete(cmd)
+    return jsonify({"status": "ok"})
+
+
+@main.route("/api/custom/run", methods=["POST"])
+def custom_run():
+    data = request.get_json()
+    if not data or not data.get("url"):
+        return jsonify({"error": "url is required"}), 400
+    url         = data["url"].strip()
+    method      = (data.get("method") or "GET").upper()
+    headers_raw = data.get("headers") or ""
+    payload_raw = data.get("payload") or ""
+
+    headers = {}
+    if headers_raw:
+        try:
+            parsed = json.loads(headers_raw)
+            if isinstance(parsed, dict):
+                headers = parsed
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    kwargs = {"headers": headers, "timeout": 10}
+    if payload_raw and method in ("POST", "PUT", "PATCH", "DELETE"):
+        try:
+            kwargs["json"] = json.loads(payload_raw)
+        except Exception:
+            kwargs["data"] = payload_raw
+
+    try:
+        resp = http_requests.request(method, url, **kwargs)
+        try:
+            body = json.dumps(resp.json(), indent=2)
+        except ValueError:
+            body = resp.text
+        return jsonify({
+            "ok": resp.ok,
+            "status": resp.status_code,
+            "body": body[:4000],
+            "truncated": len(body) > 4000,
+        })
+    except http_requests.RequestException as exc:
+        return jsonify({"ok": False, "status": 0,
+                        "body": f"{exc.__class__.__name__}: {exc}"})
