@@ -812,6 +812,7 @@ html { font-size: 15px; }
 .qt-line.qt-error   { color: #ff7a7a; }
 .qt-line.qt-cmd     { color: #ffd080; }
 .qt-line.qt-muted   { color: #495570; }
+.qt-line.qt-ai      { color: #c7d4f0; white-space: pre-wrap; }
 
 .qt-app-row {
     display: inline-flex;
@@ -857,6 +858,10 @@ html { font-size: 15px; }
     font-weight: bold;
     font-size: 1rem;
     user-select: none;
+    transition: color 0.2s;
+}
+.quake-terminal.qt-chat-mode .qt-prompt {
+    color: #78dba4;
 }
 .qt-input {
     flex: 1;

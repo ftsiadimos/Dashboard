@@ -258,7 +258,8 @@ def custom_commands_list():
         cmds = db.query(CustomCommand).order_by(CustomCommand.name).all()
     return jsonify([
         {"id": c.id, "name": c.name, "method": c.method,
-         "url": c.url, "headers": c.headers, "payload": c.payload}
+         "url": c.url, "headers": c.headers, "payload": c.payload,
+         "jq_filter": c.jq_filter or ""}
         for c in cmds
     ])
 
@@ -268,21 +269,23 @@ def custom_commands_save():
     data = request.get_json()
     if not data or not data.get("name") or not data.get("url"):
         return jsonify({"error": "name and url are required"}), 400
-    name    = data["name"].strip()
-    url     = data["url"].strip()
-    method  = (data.get("method") or "GET").upper()
-    headers = data.get("headers") or ""
-    payload = data.get("payload") or ""
+    name      = data["name"].strip()
+    url       = data["url"].strip()
+    method    = (data.get("method") or "GET").upper()
+    headers   = data.get("headers") or ""
+    payload   = data.get("payload") or ""
+    jq_filter = data.get("jq_filter") or ""
     with get_db() as db:
         existing = db.query(CustomCommand).filter_by(name=name).first()
         if existing:
-            existing.method  = method
-            existing.url     = url
-            existing.headers = headers
-            existing.payload = payload
+            existing.method    = method
+            existing.url       = url
+            existing.headers   = headers
+            existing.payload   = payload
+            existing.jq_filter = jq_filter
         else:
             db.add(CustomCommand(name=name, method=method, url=url,
-                                 headers=headers, payload=payload))
+                                 headers=headers, payload=payload, jq_filter=jq_filter))
     return jsonify({"status": "ok"})
 
 
@@ -337,3 +340,76 @@ def custom_run():
     except http_requests.RequestException as exc:
         return jsonify({"ok": False, "status": 0,
                         "body": f"{exc.__class__.__name__}: {exc}"})
+
+
+# ── Ollama AI proxy ───────────────────────────────────────────────────────────
+
+@main.route("/api/ollama/models", methods=["GET"])
+def ollama_models():
+    from dashboard.utils import get_settings
+    settings = get_settings()
+    base_url = settings.get("ollama_url", "http://localhost:11434").rstrip("/")
+    try:
+        resp = http_requests.get(f"{base_url}/api/tags", timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        models = [m["name"] for m in data.get("models", [])]
+        return jsonify({"ok": True, "models": models})
+    except http_requests.RequestException as exc:
+        return jsonify({"ok": False, "models": [],
+                        "error": f"{exc.__class__.__name__}: {exc}"})
+
+
+@main.route("/api/ollama/ask", methods=["POST"])
+def ollama_ask():
+    from dashboard.utils import get_settings
+    body = request.get_json(silent=True) or {}
+    prompt = str(body.get("prompt", "")).strip()
+    if not prompt:
+        return jsonify({"ok": False, "error": "No prompt provided"}), 400
+
+    settings = get_settings()
+    base_url = settings.get("ollama_url", "http://localhost:11434").rstrip("/")
+    model = settings.get("ollama_model", "").strip()
+    if not model:
+        return jsonify({"ok": False, "error": "No Ollama model configured. Set one in Settings → AI / Ollama."}), 400
+
+    try:
+        resp = http_requests.post(
+            f"{base_url}/api/generate",
+            json={"model": model, "prompt": prompt, "stream": False},
+            timeout=120,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return jsonify({"ok": True, "response": data.get("response", "")})
+    except http_requests.RequestException as exc:
+        return jsonify({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
+
+
+@main.route("/api/ollama/chat", methods=["POST"])
+def ollama_chat():
+    from dashboard.utils import get_settings
+    body = request.get_json(silent=True) or {}
+    messages = body.get("messages")
+    if not messages or not isinstance(messages, list):
+        return jsonify({"ok": False, "error": "messages array required"}), 400
+
+    settings = get_settings()
+    base_url = settings.get("ollama_url", "http://localhost:11434").rstrip("/")
+    model = settings.get("ollama_model", "").strip()
+    if not model:
+        return jsonify({"ok": False, "error": "No Ollama model configured. Set one in Settings \u2192 AI / Ollama."}), 400
+
+    try:
+        resp = http_requests.post(
+            f"{base_url}/api/chat",
+            json={"model": model, "messages": messages, "stream": False},
+            timeout=120,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        content = (data.get("message") or {}).get("content", "")
+        return jsonify({"ok": True, "response": content})
+    except http_requests.RequestException as exc:
+        return jsonify({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})

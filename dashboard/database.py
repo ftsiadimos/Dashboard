@@ -73,6 +73,7 @@ class CustomCommand(db.Model):
     url = db.Column(db.Text, nullable=False)
     headers = db.Column(db.Text, default="")
     payload = db.Column(db.Text, default="")
+    jq_filter = db.Column(db.Text, default="")
     created_at = db.Column(db.DateTime, server_default=func.current_timestamp())
 
 
@@ -103,10 +104,21 @@ def _ensure_default_settings(session):
         "terminal_font_family": "monospace",
         "terminal_accent": "#6c8ebf",
         "terminal_anim_speed": "280",
+        "ollama_url": "http://localhost:11434",
+        "ollama_model": "",
     }
     for key, value in defaults.items():
         if key not in existing:
             session.add(Setting(key=key, value=value))
+
+
+def _migrate_custom_commands_table(engine):
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info(custom_commands)"))
+        existing_cols = {row[1] for row in result.fetchall()}
+        if "jq_filter" not in existing_cols:
+            conn.execute(text("ALTER TABLE custom_commands ADD COLUMN jq_filter TEXT DEFAULT ''"))
+            conn.commit()
 
 
 def _migrate_applications_table(engine):
@@ -143,6 +155,7 @@ def init_db(app):
         db.create_all()
         # Migrate schema for legacy sqlite DBs where ALTER may be needed
         _migrate_applications_table(db.engine)
+        _migrate_custom_commands_table(db.engine)
         # Ensure default settings exist
         with get_db() as session:
             _ensure_default_settings(session)

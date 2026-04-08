@@ -441,11 +441,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ── save a custom command (upsert by name) ────────────────────────────
-        function qtSaveCustom(name, req) {
+        function qtSaveCustom(name, req, jqFilter) {
             fetch('/api/custom/commands', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, ...req }),
+                body: JSON.stringify({ name, ...req, jq_filter: jqFilter || '' }),
             })
                 .then(r => r.json())
                 .then(data => {
@@ -470,12 +470,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         runBtn.className = 'qt-app-row';
                         runBtn.innerHTML = '<span class="qt-app-icon">&#9654;</span>'
                             + escapeHtml(cmd.name)
-                            + ' <span class="qt-muted-inline">' + escapeHtml(cmd.method) + ' ' + escapeHtml(cmd.url) + '</span>';
-                        runBtn.title = cmd.method + ' ' + cmd.url;
+                            + ' <span class="qt-muted-inline">' + escapeHtml(cmd.method) + ' ' + escapeHtml(cmd.url)
+                            + (cmd.jq_filter ? ' | jq ' + escapeHtml(cmd.jq_filter) : '') + '</span>';
+                        runBtn.title = cmd.method + ' ' + cmd.url + (cmd.jq_filter ? ' | jq ' + cmd.jq_filter : '');
                         runBtn.addEventListener('click', () => {
                             qtWrite('> run-custom ' + cmd.name, 'qt-cmd');
                             qtRunCustom({ method: cmd.method, url: cmd.url,
-                                          headers: cmd.headers, payload: cmd.payload }, cmd.name);
+                                          headers: cmd.headers, payload: cmd.payload },
+                                        cmd.name, cmd.jq_filter || null);
                         });
 
                         const delBtn = document.createElement('span');
@@ -538,6 +540,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 qtWrite('  list-custom                 – show saved custom commands', 'qt-muted');
                 qtWrite('  run-custom <name>           – run a saved custom command', 'qt-muted');
                 qtWrite('  delete-custom <name>        – delete a saved command', 'qt-muted');
+                qtWrite('  ask <question>              – ask the configured Ollama AI model', 'qt-muted');
+                qtWrite('  chat                        – enter conversation mode with Ollama (keeps history)', 'qt-muted');
                 qtWrite('  clear                       – clear this output', 'qt-muted');
                 return;
             }
@@ -563,7 +567,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         );
                         if (!found) { qtWrite('Custom command not found: ' + name, 'qt-error'); return; }
                         qtRunCustom({ method: found.method, url: found.url,
-                                      headers: found.headers, payload: found.payload }, found.name);
+                                      headers: found.headers, payload: found.payload },
+                                    found.name, found.jq_filter || null);
                     })
                     .catch(() => qtWrite('Failed to fetch custom commands.', 'qt-error'));
                 return;
@@ -571,6 +576,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (cmd.startsWith('delete-custom ')) {
                 qtDeleteCustomByName(cmd.slice('delete-custom '.length).trim());
+                return;
+            }
+
+            if (cmd.startsWith('ask ') || cmd === 'ask') {
+                const question = cmd.startsWith('ask ') ? cmd.slice(4).trim() : '';
+                if (!question) { qtWrite('Usage: ask <your question>', 'qt-error'); return; }
+                qtAskOllama(question);
+                return;
+            }
+
+            if (cmd === 'chat') {
+                qtEnterChat();
                 return;
             }
 
@@ -598,11 +615,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 // strip any | jq ... pipe before parsing — the curl part is everything before the first |
-                const curlOnly = splitPipe(curlPart)[0];
+                const pipeParts = splitPipe(curlPart);
+                const curlOnly  = pipeParts[0];
+                let saveJqFilter = null;
+                for (let i = 1; i < pipeParts.length; i++) {
+                    const seg = pipeParts[i].trim();
+                    if (seg === 'jq' || seg.startsWith('jq ')) {
+                        saveJqFilter = seg.replace(/^jq\s*/, '').trim() || '.';
+                    }
+                }
                 const tokens = tokenize(curlOnly).slice(1); // drop 'curl'
                 const req = parseCurl(tokens);
                 if (!req.url) { qtWrite('No URL found in curl command.', 'qt-error'); return; }
-                qtSaveCustom(saveName, req);
+                qtSaveCustom(saveName, req, saveJqFilter);
                 return;
             }
 
@@ -628,9 +653,96 @@ document.addEventListener('DOMContentLoaded', () => {
             qtWrite('Unknown command. Type "help" for a list.', 'qt-error');
         }
 
+        // ── Ollama AI ─────────────────────────────────────────────────────────
+        // Chat mode state
+        let chatMode    = false;
+        let chatHistory = [];   // [{role:'user'|'assistant', content:'...'}]
+
+        const qtPromptEl = document.querySelector('.qt-prompt');
+
+        function qtEnterChat() {
+            chatMode    = true;
+            chatHistory = [];
+            qtPanel.classList.add('qt-chat-mode');
+            qtPromptEl.textContent = '\u{1F916}';
+            qtInput.placeholder = 'Chat with Ollama \u2014 type exit to leave\u2026';
+            qtWrite('Entered chat mode. Type your message and press Enter.', 'qt-info');
+            qtWrite('Type exit or /exit to return to normal mode.', 'qt-muted');
+        }
+
+        function qtExitChat() {
+            chatMode    = false;
+            chatHistory = [];
+            qtPanel.classList.remove('qt-chat-mode');
+            qtPromptEl.textContent = '>';
+            qtInput.placeholder = "Type 'help' for commands\u2026";
+            qtWrite('Left chat mode.', 'qt-muted');
+        }
+
+        async function qtChatSend(message) {
+            chatHistory.push({role: 'user', content: message});
+            const thinkLine = document.createElement('div');
+            thinkLine.className = 'qt-line qt-muted';
+            thinkLine.textContent = 'Thinking\u2026';
+            qtOutput.appendChild(thinkLine);
+            qtOutput.scrollTop = qtOutput.scrollHeight;
+            try {
+                const resp = await fetch('/api/ollama/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({messages: chatHistory}),
+                });
+                const data = await resp.json();
+                thinkLine.remove();
+                if (!data.ok) {
+                    qtWrite('\u26a0\ufe0f  ' + (data.error || 'Ollama error'), 'qt-error');
+                    chatHistory.pop(); // remove failed user message
+                    return;
+                }
+                chatHistory.push({role: 'assistant', content: data.response});
+                const lines = (data.response || '').split('\n');
+                lines.forEach(l => qtWrite(l, 'qt-ai'));
+            } catch (err) {
+                thinkLine.remove();
+                qtWrite('Network error: ' + err.message, 'qt-error');
+                chatHistory.pop();
+            }
+        }
+
+        async function qtAskOllama(question) {
+            const thinkLine = document.createElement('div');
+            thinkLine.className = 'qt-line qt-muted';
+            thinkLine.textContent = 'Thinking\u2026';
+            qtOutput.appendChild(thinkLine);
+            qtOutput.scrollTop = qtOutput.scrollHeight;
+            try {
+                const resp = await fetch('/api/ollama/ask', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({prompt: question}),
+                });
+                const data = await resp.json();
+                thinkLine.remove();
+                if (!data.ok) {
+                    qtWrite('\u26a0\ufe0f  ' + (data.error || 'Ollama error'), 'qt-error');
+                    return;
+                }
+                const lines = (data.response || '').split('\n');
+                lines.forEach(l => qtWrite(l, 'qt-ai'));
+            } catch (err) {
+                thinkLine.remove();
+                qtWrite('Network error: ' + err.message, 'qt-error');
+            }
+        }
+
         // ── keyboard / button bindings ────────────────────────────────────────
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape' && isOpen) { e.preventDefault(); qtClose(); return; }
+            if (e.key === 'Escape' && isOpen) {
+                e.preventDefault();
+                if (chatMode) { qtExitChat(); return; }
+                qtClose();
+                return;
+            }
             if (e.key === triggerKey) {
                 const tag     = document.activeElement ? document.activeElement.tagName : '';
                 const inField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) &&
@@ -649,7 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const COMPLETIONS = [
             'help', 'list', 'list-custom', 'clear',
             'run ', 'run-custom ', 'curl ', 'save ',
-            'delete-custom ',
+            'delete-custom ', 'ask ', 'chat',
         ];
 
         qtInput.addEventListener('keydown', e => {
@@ -658,6 +770,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 qtInput.value = '';
                 histIdx = -1;
                 histDraft = '';
+                if (chatMode) {
+                    if (!val) return;
+                    if (val === 'exit' || val === '/exit') { qtExitChat(); return; }
+                    qtWrite('\u{1F916} ' + val, 'qt-cmd');
+                    qtChatSend(val);
+                    return;
+                }
                 if (val) {
                     // push to front, avoid consecutive duplicates, cap at 100
                     if (cmdHistory[0] !== val) cmdHistory.unshift(val);
