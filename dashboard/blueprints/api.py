@@ -158,14 +158,8 @@ def _npm_get_hosts(base_url: str, identity: str, secret: str, verify: bool = Tru
     return res.json()
 
 
-@main.route("/api/app/<int:app_id>/stats")
-def api_app_stats(app_id):
-    with get_db() as db:
-        app = db.get(Application, app_id)
-
-    if not app or not app.api_url:
-        return jsonify({"error": "No API configured"}), 404
-
+def _fetch_single_stat(app):
+    """Perform the outgoing HTTP request for one app and return a result dict."""
     headers = {}
     if app.api_headers:
         try:
@@ -177,7 +171,6 @@ def api_app_stats(app_id):
 
     try:
         method = app.api_method.upper() if app.api_method else "GET"
-        # prepare request kwargs; include payload if provided for non-GET methods
         verify = getattr(app, "api_verify", True)
         kwargs = {"headers": headers, "timeout": 10, "verify": verify}
         payload_val = app.api_payload
@@ -187,7 +180,6 @@ def api_app_stats(app_id):
                 creds = json.loads(payload_val)
             except Exception:
                 creds = {}
-            # support both identity/secret and email/password naming
             if isinstance(creds, dict) and (
                 ("identity" in creds and "secret" in creds) or
                 ("email" in creds and "password" in creds)
@@ -204,7 +196,7 @@ def api_app_stats(app_id):
                     verify,
                 )
                 display = _extract_value(data, app.api_value_template)
-                return jsonify({"ok": True, "display": display})
+                return {"ok": True, "display": display}
         if payload_val and method in ("POST", "PUT", "PATCH", "DELETE"):
             try:
                 kwargs["json"] = json.loads(payload_val)
@@ -212,7 +204,6 @@ def api_app_stats(app_id):
                 kwargs["data"] = payload_val
         resp = http_requests.request(method, app.api_url, **kwargs)
 
-        # LOGGING: dump status and body if not OK
         if not resp.ok:
             current_app.logger.warning(
                 "API call to %s returned %s:\n%s",
@@ -225,7 +216,6 @@ def api_app_stats(app_id):
         try:
             data = resp.json()
         except ValueError:
-            # response isn't JSON – try to decode invalid bytes instead of failing
             body = None
             try:
                 body = resp.content.decode(resp.encoding or "utf-8", errors="replace")
@@ -234,10 +224,57 @@ def api_app_stats(app_id):
                 data = body if body is not None else resp.text
 
         display = _extract_value(data, app.api_value_template)
-        return jsonify({"ok": True, "display": display})
+        return {"ok": True, "display": display}
 
     except http_requests.RequestException as exc:
-        return jsonify({"ok": False, "display": f"Error: {exc.__class__.__name__}"})
+        return {"ok": False, "display": f"Error: {exc.__class__.__name__}"}
+
+
+@main.route("/api/app/<int:app_id>/stats")
+def api_app_stats(app_id):
+    with get_db() as db:
+        app = db.get(Application, app_id)
+
+    if not app or not app.api_url:
+        return jsonify({"error": "No API configured"}), 404
+
+    return jsonify(_fetch_single_stat(app))
+
+
+@main.route("/api/apps/stats/batch", methods=["POST"])
+def api_apps_stats_batch():
+    """Fetch stats for multiple apps in parallel. Accepts {"ids": [1,2,3]}."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    body = request.get_json(silent=True) or {}
+    ids  = body.get("ids")
+    if not ids or not isinstance(ids, list):
+        return jsonify({"error": "ids array required"}), 400
+
+    # Validate ids are integers
+    try:
+        ids = [int(i) for i in ids]
+    except (ValueError, TypeError):
+        return jsonify({"error": "ids must be integers"}), 400
+
+    with get_db() as db:
+        apps = {a.id: a for a in db.query(Application).filter(Application.id.in_(ids)).all()}
+
+    results = {}
+
+    def fetch(app_id):
+        app = apps.get(app_id)
+        if not app or not app.api_url:
+            return app_id, {"ok": False, "display": "No API configured"}
+        return app_id, _fetch_single_stat(app)
+
+    with ThreadPoolExecutor(max_workers=min(len(ids), 20)) as pool:
+        futures = {pool.submit(fetch, i): i for i in ids}
+        for future in as_completed(futures):
+            app_id, result = future.result()
+            results[str(app_id)] = result
+
+    return jsonify({"results": results})
 
 
 @main.route("/api/apps")

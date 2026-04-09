@@ -11,47 +11,57 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Live API stats for app tiles ─────────────────────────────────────────
     const alertKeywords = (document.body.dataset.alertKeywords || 'alert,alerts').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
 
-    function fetchStats(card) {
-        const appId = card.dataset.apiId;
+    function applyStats(card, data) {
+        const appId  = card.dataset.apiId;
         const metaEl = document.getElementById('meta-' + appId);
         const statsEl = document.getElementById('stats-' + appId);
         if (!metaEl) return;
 
-        fetch('/api/app/' + encodeURIComponent(appId) + '/stats')
+        if (data.ok) {
+            const display = String(data.display || '');
+            const normalized = display.toLowerCase();
+            const hasAlertWord = alertKeywords.some(keyword => normalized.includes(keyword));
+            const counts = (display.match(/\d+/g) || [])
+                .map(n => parseInt(n, 10))
+                .filter(n => !Number.isNaN(n));
+            const alertCount = counts.length ? Math.max(...counts) : 0;
+            const isAlert = hasAlertWord && alertCount > 0;
+
+            card.classList.toggle('has-alerts-warning', isAlert && alertCount <= 2);
+            card.classList.toggle('has-alerts-danger', isAlert && alertCount >= 3);
+            card.classList.toggle('has-alerts', isAlert);
+
+            if (statsEl) {
+                statsEl.innerHTML = '<span class="stats-value">' + escapeHtml(display) + '</span>';
+            }
+            metaEl.textContent = display;
+        } else {
+            if (statsEl) {
+                statsEl.innerHTML = '<span class="stats-error">' + escapeHtml(data.display) + '</span>';
+            }
+            card.classList.remove('has-alerts');
+            metaEl.textContent = String(data.display || 'API error');
+        }
+    }
+
+    // per-card abort controllers for polling requests
+    const cardAborts = {};
+
+    function fetchStats(card) {
+        const appId = card.dataset.apiId;
+        // cancel any in-flight request for this card
+        if (cardAborts[appId]) cardAborts[appId].abort();
+        const ctrl = new AbortController();
+        cardAborts[appId] = ctrl;
+
+        fetch('/api/app/' + encodeURIComponent(appId) + '/stats', {signal: ctrl.signal})
             .then(r => r.json())
-            .then(data => {
-                if (data.ok) {
-                    const display = String(data.display || '');
-
-                    // Blink the card when the display indicates active alerts (>0).
-                    // This uses a configurable list of keywords and numeric count.
-                    const normalized = display.toLowerCase();
-                    const hasAlertWord = alertKeywords.some(keyword => normalized.includes(keyword));
-                    const counts = (display.match(/\d+/g) || [])
-                        .map(n => parseInt(n, 10))
-                        .filter(n => !Number.isNaN(n));
-                    const alertCount = counts.length ? Math.max(...counts) : 0;
-                    const isAlert = hasAlertWord && alertCount > 0;
-
-                    card.classList.toggle('has-alerts-warning', isAlert && alertCount <= 2);
-                    card.classList.toggle('has-alerts-danger', isAlert && alertCount >= 3);
-                    card.classList.toggle('has-alerts', isAlert);
-
-                    if (statsEl) {
-                        statsEl.innerHTML = '<span class="stats-value">' + escapeHtml(display) + '</span>';
-                    }
-                    metaEl.textContent = display;
-                } else {
-                    if (statsEl) {
-                        statsEl.innerHTML = '<span class="stats-error">' + escapeHtml(data.display) + '</span>';
-                    }
-                    card.classList.remove('has-alerts');
-                    metaEl.textContent = String(data.display || 'API error');
-                }
-            })
-            .catch(() => {
+            .then(data => { applyStats(card, data); })
+            .catch(err => {
+                if (err.name === 'AbortError') return; // superseded by newer request
+                const statsEl = document.getElementById('stats-' + appId);
                 card.classList.remove('has-alerts');
-                statsEl.innerHTML = '<span class="stats-error">Fetch failed</span>';
+                if (statsEl) statsEl.innerHTML = '<span class="stats-error">Fetch failed</span>';
             });
     }
 
@@ -61,13 +71,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return d.innerHTML;
     }
 
-    document.querySelectorAll('.app-card[data-api-id]').forEach(card => {
-        // Initial fetch
-        fetchStats(card);
-        // Recurring refresh
-        const interval = Math.max(5, parseInt(card.dataset.apiInterval, 10) || 30);
-        setInterval(() => fetchStats(card), interval * 1000);
-    });
+    const apiCards = Array.from(document.querySelectorAll('.app-card[data-api-id]'));
+
+    if (apiCards.length > 0) {
+        // ── Initial load: one batch request instead of N individual ones ─────
+        const ids = apiCards.map(c => parseInt(c.dataset.apiId, 10));
+        fetch('/api/apps/stats/batch', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ids}),
+        })
+        .then(r => r.json())
+        .then(data => {
+            const results = data.results || {};
+            apiCards.forEach(card => {
+                const result = results[card.dataset.apiId];
+                if (result) applyStats(card, result);
+            });
+        })
+        .catch(() => {
+            // fallback to individual fetches if batch fails
+            apiCards.forEach(card => fetchStats(card));
+        });
+
+        // ── Recurring per-card polls ──────────────────────────────────────────
+        apiCards.forEach(card => {
+            const interval = Math.max(5, parseInt(card.dataset.apiInterval, 10) || 30);
+            setInterval(() => fetchStats(card), interval * 1000);
+        });
+    }
 
     // keep navbar collapse state across reloads
     const navbar = document.querySelector('.navbar');
