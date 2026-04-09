@@ -767,7 +767,7 @@ html { font-size: 15px; }
 }
 .qt-hint {
     font-size: 0.78rem;
-    color: #5a6a8a;
+    color: #8899bb;
     flex: 1;
 }
 .qt-hint kbd {
@@ -781,7 +781,7 @@ html { font-size: 15px; }
 .qt-close {
     background: none;
     border: none;
-    color: #5a6a8a;
+    color: #8899bb;
     font-size: 1.3rem;
     cursor: pointer;
     line-height: 1;
@@ -807,12 +807,12 @@ html { font-size: 15px; }
     word-break: break-word;
     line-height: 1.55;
 }
-.qt-line.qt-info    { color: #7ec8e3; }
-.qt-line.qt-success { color: #78dba4; }
-.qt-line.qt-error   { color: #ff7a7a; }
-.qt-line.qt-cmd     { color: #ffd080; }
-.qt-line.qt-muted   { color: #495570; }
-.qt-line.qt-ai      { color: #c7d4f0; white-space: pre-wrap; }
+.qt-line.qt-info    { color: #9ddaf0; }
+.qt-line.qt-success { color: #8fedb8; }
+.qt-line.qt-error   { color: #ff9090; }
+.qt-line.qt-cmd     { color: #ffe499; }
+.qt-line.qt-muted   { color: #7888aa; }
+.qt-line.qt-ai      { color: #d8e4ff; white-space: pre-wrap; }
 
 .qt-app-row {
     display: inline-flex;
@@ -830,7 +830,7 @@ html { font-size: 15px; }
     color: #c8e8ff;
 }
 .qt-app-icon { font-size: 0.7rem; opacity: 0.6; }
-.qt-muted-inline { color: #495570; font-size: 0.82em; margin-left: 0.3em; }
+.qt-muted-inline { color: #7888aa; font-size: 0.82em; margin-left: 0.3em; }
 
 .qt-custom-row { display: flex; align-items: center; gap: 0.4rem; }
 .qt-del-btn {
@@ -868,12 +868,12 @@ html { font-size: 15px; }
     background: transparent;
     border: none;
     outline: none;
-    color: #c8d3f5;
+    color: #e0e8ff;
     font-family: inherit;
     font-size: inherit;
     caret-color: var(--primary, #6c8ebf);
 }
-.qt-input::placeholder { color: #2e3a52; }
+.qt-input::placeholder { color: #7888aa; }
 
 .qt-resize-handle {
     position: absolute;
@@ -893,7 +893,7 @@ html { font-size: 15px; }
 /* panel must be position:relative so the handle sits at exact bottom */
 .quake-terminal { position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
     background: rgba(8,10,18,0.97); border-bottom: 2px solid var(--qt-accent, var(--primary,#6c8ebf));
-    font-family: 'Courier New',Courier,monospace; font-size: 0.875rem; color: #c8d3f5;
+    font-family: 'Courier New',Courier,monospace; font-size: 0.875rem; color: #e0e8ff;
     display: flex; flex-direction: column;
     transform: translateY(-100%);
     transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
