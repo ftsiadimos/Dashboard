@@ -7,31 +7,70 @@
 <div class="form-card">
     <h2>Application Summary</h2>
     <p>
-        Dashboard is a lightweight web utility for managing applications, categories and settings through a clean, responsive interface. It supports quick app creation, favorites, dynamic dashboards and integration-ready monitoring.
+        Dashboard is a lightweight self-hosted web application for organising and launching your services, apps and bookmarks. It provides a clean, responsive interface with live API monitoring, a built-in terminal console and AI integration.
     </p>
 
     <h2>Key Features</h2>
+
+    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">App &amp; Category Management</h3>
     <ul>
-        <li>Create, Read, Update, Delete (CRUD) applications and categories</li>
-        <li>Bulk category changes for selected apps</li>
-        <li>Responsive UI with sorting and inline controls</li>
+        <li>Full CRUD for applications and categories</li>
+        <li>Drag-and-drop sort order for apps and categories</li>
+        <li>Bulk category assignment for multiple apps at once</li>
+        <li>Custom icons (upload or URL) per app</li>
+        <li>Export &amp; import apps/categories as JSON</li>
     </ul>
 
-    <h2>Developer</h2>
+    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">Live API Monitoring</h3>
+    <ul>
+        <li>Per-app API URL with configurable poll interval</li>
+        <li>Live stats displayed on app tiles</li>
+        <li>Configurable alert keywords trigger visual warning/danger badges</li>
+    </ul>
+
+    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">Quake-style Drop-down Terminal</h3>
+    <ul>
+        <li>Slide-down console activated by a configurable hotkey (default <code>`</code>)</li>
+        <li><code>list</code> — show API-enabled app tiles</li>
+        <li><code>run &lt;name&gt;</code> — call an app's API endpoint</li>
+        <li><code>curl</code> — run custom HTTP requests with headers, body and <code>jq</code> filtering</li>
+        <li><code>save</code> / <code>list-custom</code> / <code>run-custom</code> / <code>delete-custom</code> — saved command shortcuts</li>
+        <li><code>ask &lt;question&gt;</code> / <code>chat</code> — Ollama AI integration</li>
+        <li>Command history (↑/↓), tab autocomplete</li>
+        <li>Resizable by dragging the bottom edge</li>
+        <li><kbd>Ctrl+Shift+F</kbd> — toggle fullscreen terminal</li>
+        <li>Fully customisable: trigger key, height, opacity, font, accent colour, animation speed</li>
+    </ul>
+
+    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">AI / Ollama Integration</h3>
+    <ul>
+        <li>Connects to any local or remote Ollama server</li>
+        <li>Model selector with one-click fetch from the server</li>
+        <li>Configurable system prompt to set AI personality and instructions</li>
+        <li>Single-question (<code>ask</code>) and persistent conversation (<code>chat</code>) modes</li>
+    </ul>
+
+    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">UI &amp; Appearance</h3>
+    <ul>
+        <li>Dark theme with customisable accent colour</li>
+        <li>Custom background image support</li>
+        <li>Collapsible navigation bar</li>
+        <li>Integrated search bar with configurable search provider</li>
+    </ul>
+
+    <h2 style="margin-top:1.5rem;">Developer</h2>
     <p>
-        Built and maintained by Fotios Tsiadimos.
-        <br>
+        Built and maintained by Fotios Tsiadimos.<br>
         GitHub: <a href="https://github.com/ftsiadimos" target="_blank" rel="noopener">ftsiadimos</a>
     </p>
 
-    <hr>
+    <hr style="margin:1.5rem 0;">
 
     <p><strong>Version:</strong> {{ version }}</p>
     {% set gh = settings.get('github_url', 'https://github.com/ftsiadimos/dashboard.git') %}
     {% if gh %}
     <p>
         <a href="{{ gh }}" class="btn btn-primary" target="_blank" rel="noopener">
-            <!-- GitHub mark (16x16) -->
             <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
             View on GitHub
         </a>

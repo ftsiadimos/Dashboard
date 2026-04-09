@@ -249,6 +249,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         function qtClear() { qtOutput.innerHTML = ''; }
 
+        // renders a line of AI text, turning URLs and markdown links into clickable anchors
+        function qtWriteAI(text, cls) {
+            const line = document.createElement('div');
+            line.className = 'qt-line' + (cls ? ' ' + cls : '');
+            // match [label](url) markdown links or bare http(s) URLs
+            const urlRe = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s]+)/g;
+            let last = 0, m;
+            while ((m = urlRe.exec(text)) !== null) {
+                if (m.index > last) {
+                    line.appendChild(document.createTextNode(text.slice(last, m.index)));
+                }
+                const a = document.createElement('a');
+                if (m[2]) {
+                    // markdown [label](url)
+                    a.textContent = m[1];
+                    a.href = m[2];
+                } else {
+                    // bare URL
+                    a.textContent = m[3];
+                    a.href = m[3];
+                }
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                line.appendChild(a);
+                last = m.index + m[0].length;
+            }
+            if (last < text.length) {
+                line.appendChild(document.createTextNode(text.slice(last)));
+            }
+            qtOutput.appendChild(line);
+            qtOutput.scrollTop = qtOutput.scrollHeight;
+        }
+
         // ── app-tile API loading ──────────────────────────────────────────────
         function renderAppRows(data) {
             if (!data.length) { qtWrite('No apps with API URLs configured.', 'qt-muted'); return; }
@@ -543,6 +576,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 qtWrite('  ask <question>              – ask the configured Ollama AI model', 'qt-muted');
                 qtWrite('  chat                        – enter conversation mode with Ollama (keeps history)', 'qt-muted');
                 qtWrite('  clear                       – clear this output', 'qt-muted');
+                qtWrite('Hotkeys:', 'qt-info');
+                qtWrite('  Ctrl+Shift+F                – toggle fullscreen terminal', 'qt-muted');
                 return;
             }
 
@@ -701,7 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 chatHistory.push({role: 'assistant', content: data.response});
                 const lines = (data.response || '').split('\n');
-                lines.forEach(l => qtWrite(l, 'qt-ai'));
+                lines.forEach(l => qtWriteAI(l, 'qt-ai'));
             } catch (err) {
                 thinkLine.remove();
                 qtWrite('Network error: ' + err.message, 'qt-error');
@@ -728,7 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 const lines = (data.response || '').split('\n');
-                lines.forEach(l => qtWrite(l, 'qt-ai'));
+                lines.forEach(l => qtWriteAI(l, 'qt-ai'));
             } catch (err) {
                 thinkLine.remove();
                 qtWrite('Network error: ' + err.message, 'qt-error');
@@ -736,11 +771,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ── keyboard / button bindings ────────────────────────────────────────
+        let qtMaximized = false;
+        function qtToggleMaximize() {
+            qtMaximized = !qtMaximized;
+            if (qtMaximized) {
+                qtPanel.dataset.prevHeight = qtPanel.style.height;
+                qtPanel.style.height = '100vh';
+                qtPanel.classList.add('qt-maximized');
+            } else {
+                qtPanel.style.height = qtPanel.dataset.prevHeight || (termHeight + 'px');
+                qtPanel.classList.remove('qt-maximized');
+            }
+        }
+
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape' && isOpen) {
                 e.preventDefault();
                 if (chatMode) { qtExitChat(); return; }
                 qtClose();
+                return;
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+                e.preventDefault();
+                if (!isOpen) qtOpen();
+                qtToggleMaximize();
                 return;
             }
             if (e.key === triggerKey) {

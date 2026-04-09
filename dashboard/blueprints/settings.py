@@ -18,7 +18,7 @@ def settings_page():
             "terminal":  ["terminal_key", "terminal_height", "terminal_opacity",
                           "terminal_font_size", "terminal_font_family",
                           "terminal_accent", "terminal_anim_speed"],
-            "ollama":    ["ollama_url", "ollama_model"],
+            "ollama":    ["ollama_url", "ollama_model", "ollama_system_prompt"],
         }
         keys = section_keys.get(section, list(section_keys["dashboard"]))
         bool_keys = {"search_enabled", "navbar_enabled"}

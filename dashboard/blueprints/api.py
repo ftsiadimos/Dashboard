@@ -374,10 +374,14 @@ def ollama_ask():
     if not model:
         return jsonify({"ok": False, "error": "No Ollama model configured. Set one in Settings → AI / Ollama."}), 400
 
+    system_prompt = settings.get("ollama_system_prompt", "").strip()
     try:
+        payload = {"model": model, "prompt": prompt, "stream": False}
+        if system_prompt:
+            payload["system"] = system_prompt
         resp = http_requests.post(
             f"{base_url}/api/generate",
-            json={"model": model, "prompt": prompt, "stream": False},
+            json=payload,
             timeout=120,
         )
         resp.raise_for_status()
@@ -401,6 +405,9 @@ def ollama_chat():
     if not model:
         return jsonify({"ok": False, "error": "No Ollama model configured. Set one in Settings \u2192 AI / Ollama."}), 400
 
+    system_prompt = settings.get("ollama_system_prompt", "").strip()
+    if system_prompt:
+        messages = [{"role": "system", "content": system_prompt}] + messages
     try:
         resp = http_requests.post(
             f"{base_url}/api/chat",

@@ -813,6 +813,8 @@ html { font-size: 15px; }
 .qt-line.qt-cmd     { color: #ffe499; }
 .qt-line.qt-muted   { color: #7888aa; }
 .qt-line.qt-ai      { color: #d8e4ff; white-space: pre-wrap; }
+.qt-line.qt-ai a    { color: #7ec8f5; text-decoration: underline; }
+.qt-line.qt-ai a:hover { color: #b8e4ff; }
 
 .qt-app-row {
     display: inline-flex;
@@ -890,6 +892,7 @@ html { font-size: 15px; }
 .qt-resize-handle.resizing {
     background: rgba(108, 142, 191, 0.35);
 }
+.quake-terminal.qt-maximized .qt-resize-handle { display: none; }
 /* panel must be position:relative so the handle sits at exact bottom */
 .quake-terminal { position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
     background: rgba(8,10,18,0.97); border-bottom: 2px solid var(--qt-accent, var(--primary,#6c8ebf));
