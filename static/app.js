@@ -734,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
             qtPromptEl.textContent = '\u{1F916}';
             qtInput.placeholder = 'Chat with Ollama \u2014 type exit to leave\u2026';
             qtWrite('Entered chat mode. Type your message and press Enter.', 'qt-info');
-            qtWrite('Type exit or /exit to return to normal mode.', 'qt-muted');
+            qtWrite('Type exit or /exit to leave \u00b7 /clear to reset conversation history.', 'qt-muted');
         }
 
         function qtExitChat() {
@@ -746,8 +746,15 @@ document.addEventListener('DOMContentLoaded', () => {
             qtWrite('Left chat mode.', 'qt-muted');
         }
 
+        const CHAT_HISTORY_LIMIT = Math.max(2, parseInt(bd.ollamaChatHistoryLimit, 10) || 20);
+
         async function qtChatSend(message) {
             chatHistory.push({role: 'user', content: message});
+            // Trim oldest pairs to stay within the limit (always keep an even number so
+            // user/assistant turns stay paired; system messages added server-side are excluded)
+            if (chatHistory.length > CHAT_HISTORY_LIMIT) {
+                chatHistory = chatHistory.slice(chatHistory.length - CHAT_HISTORY_LIMIT);
+            }
             const thinkLine = document.createElement('div');
             thinkLine.className = 'qt-line qt-muted';
             thinkLine.textContent = 'Thinking\u2026';
@@ -763,8 +770,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 thinkLine.remove();
                 if (!data.ok) {
                     qtWrite('\u26a0\ufe0f  ' + (data.error || 'Ollama error'), 'qt-error');
+                    if (data.context_overflow) {
+                        qtWrite('Tip: type /clear to reset conversation history and free context.', 'qt-muted');
+                    }
                     chatHistory.pop(); // remove failed user message
                     return;
+                }
+                if (data.trimmed) {
+                    qtWrite('(History was trimmed to fit the model context window.)', 'qt-muted');
+                    chatHistory = chatHistory.slice(-4);
                 }
                 chatHistory.push({role: 'assistant', content: data.response});
                 const lines = (data.response || '').split('\n');
@@ -859,6 +873,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (chatMode) {
                     if (!val) return;
                     if (val === 'exit' || val === '/exit') { qtExitChat(); return; }
+                    if (val === '/clear' || val === 'clear') {
+                        chatHistory = [];
+                        qtWrite('Conversation history cleared.', 'qt-muted');
+                        return;
+                    }
                     qtWrite('\u{1F916} ' + val, 'qt-cmd');
                     qtChatSend(val);
                     return;

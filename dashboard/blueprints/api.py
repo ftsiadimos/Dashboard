@@ -421,9 +421,16 @@ def ollama_ask():
             json=payload,
             timeout=120,
         )
-        resp.raise_for_status()
+        if not resp.ok:
+            try:
+                err_detail = resp.json().get("error") or resp.text[:300]
+            except Exception:
+                err_detail = resp.text[:300] if resp.text else f"HTTP {resp.status_code}"
+            return jsonify({"ok": False, "error": f"Ollama error ({resp.status_code}): {err_detail}"})
         data = resp.json()
         return jsonify({"ok": True, "response": data.get("response", "")})
+    except http_requests.exceptions.Timeout:
+        return jsonify({"ok": False, "error": "Request timed out — the model took too long to respond. Try a shorter message or a faster model."})
     except http_requests.RequestException as exc:
         return jsonify({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
 
@@ -445,15 +452,47 @@ def ollama_chat():
     system_prompt = settings.get("ollama_system_prompt", "").strip()
     if system_prompt:
         messages = [{"role": "system", "content": system_prompt}] + messages
-    try:
-        resp = http_requests.post(
+
+    def _do_chat(msgs):
+        return http_requests.post(
             f"{base_url}/api/chat",
-            json={"model": model, "messages": messages, "stream": False},
+            json={"model": model, "messages": msgs, "stream": False},
             timeout=120,
         )
-        resp.raise_for_status()
+
+    try:
+        resp = _do_chat(messages)
+        # On 500, retry progressively stripping history.
+        # Pass 1: keep system prompt + last 4 messages (handles context overflow).
+        # Pass 2: send only the last user message (handles GPU OOM on complex prompts).
+        if resp.status_code == 500:
+            last_user = [m for m in messages if m.get("role") == "user"][-1:]
+            sys_msg   = [messages[0]] if messages and messages[0].get("role") == "system" else []
+
+            # Pass 1 — trimmed history (only useful when there are many messages)
+            if len(messages) > 2:
+                trimmed = (sys_msg + messages[-4:]) if sys_msg else messages[-4:]
+                resp = _do_chat(trimmed)
+
+            # Pass 2 — bare last user message (no system prompt, no history)
+            if resp.status_code == 500 and last_user and last_user != messages:
+                resp = _do_chat(last_user)
+
+            if resp.ok:
+                data = resp.json()
+                content = (data.get("message") or {}).get("content", "")
+                return jsonify({"ok": True, "response": content, "trimmed": True})
+
+        if not resp.ok:
+            try:
+                err_detail = resp.json().get("error") or resp.text[:300]
+            except Exception:
+                err_detail = resp.text[:300] if resp.text else f"HTTP {resp.status_code}"
+            return jsonify({"ok": False, "error": f"Ollama error ({resp.status_code}): {err_detail}", "context_overflow": resp.status_code == 500})
         data = resp.json()
         content = (data.get("message") or {}).get("content", "")
         return jsonify({"ok": True, "response": content})
+    except http_requests.exceptions.Timeout:
+        return jsonify({"ok": False, "error": "Request timed out — the model took too long to respond. Try a shorter message or a faster model."})
     except http_requests.RequestException as exc:
         return jsonify({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})

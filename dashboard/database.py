@@ -106,6 +106,7 @@ def _ensure_default_settings(session):
         "terminal_anim_speed": "280",
         "ollama_url": "http://localhost:11434",
         "ollama_model": "",
+        "ollama_chat_history_limit": "20",
     }
     for key, value in defaults.items():
         if key not in existing:
