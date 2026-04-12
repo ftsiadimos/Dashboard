@@ -427,10 +427,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ── minimal jq-style filter applied to parsed JSON ────────────────────
-        // Supports: .  .key  .key.nested  .key[N]  .[N]  .key[]
+        // Supports: .  .key  .key.nested  .key[N]  .[N]  .key[]  length  keys  type  . | pipe
         function applyJq(data, filter) {
             filter = (filter || '').trim();
+            // strip surrounding quotes added by shell-style quoting: jq '. | length'
+            if ((filter.startsWith("'") && filter.endsWith("'")) ||
+                (filter.startsWith('"') && filter.endsWith('"'))) {
+                filter = filter.slice(1, -1).trim();
+            }
             if (!filter || filter === '.') return JSON.stringify(data, null, 2);
+
+            // handle piped expressions: `. | length`, `. | keys`, etc.
+            if (filter.includes(' | ')) {
+                const stages = filter.split(' | ');
+                let cur = data;
+                for (const stage of stages) {
+                    const result = applyJq(cur, stage.trim());
+                    try { cur = JSON.parse(result); } catch (_) { return result; }
+                }
+                if (typeof cur === 'object' && cur !== null) return JSON.stringify(cur, null, 2);
+                return String(cur);
+            }
+
+            // built-in functions
+            if (filter === 'length') {
+                if (Array.isArray(data) || typeof data === 'string') return String(data.length);
+                if (typeof data === 'object' && data !== null) return String(Object.keys(data).length);
+                return 'null';
+            }
+            if (filter === 'keys') {
+                if (typeof data === 'object' && data !== null && !Array.isArray(data))
+                    return JSON.stringify(Object.keys(data), null, 2);
+                return 'null';
+            }
+            if (filter === 'type') {
+                if (data === null) return '"null"';
+                if (Array.isArray(data)) return '"array"';
+                return '"' + typeof data + '"';
+            }
 
             // strip leading dot
             let path = filter.startsWith('.') ? filter.slice(1) : filter;
@@ -456,18 +490,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if (seg) segs.push(seg);
 
             let cur = data;
-            for (const s of segs) {
+            for (let si = 0; si < segs.length; si++) {
+                const s = segs[si];
                 if (cur === null || cur === undefined) break;
                 if (s.startsWith('[') && s.endsWith(']')) {
                     const inner = s.slice(1, -1);
                     if (inner === '') {
-                        // .[] → map over array, return one JSON value per line
+                        // .[] iterator — if more segments remain, map over each item
                         if (Array.isArray(cur)) {
-                            return cur.map(v =>
-                                (typeof v === 'object' && v !== null)
-                                    ? JSON.stringify(v, null, 2)
-                                    : String(v)
-                            ).join('\n');
+                            const remaining = segs.slice(si + 1);
+                            if (remaining.length === 0) {
+                                return cur.map(v =>
+                                    (typeof v === 'object' && v !== null)
+                                        ? JSON.stringify(v, null, 2)
+                                        : String(v)
+                                ).join('\n');
+                            }
+                            // rebuild a sub-filter for the remaining path and apply per item
+                            const subFilter = '.' + remaining.map(r => r.startsWith('[') ? r : r).join('.');
+                            return cur.map(v => applyJq(v, subFilter)).join('\n');
                         }
                     } else {
                         cur = Array.isArray(cur) ? cur[parseInt(inner, 10)] : undefined;
@@ -499,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (jqFilter && data.ok) {
                         try { output = applyJq(JSON.parse(data.body), jqFilter); } catch (_) {}
                     }
-                    output.split('\n').slice(0, 30).forEach(l => qtWrite(l));
+                    output.split('\n').slice(0, 200).forEach(l => qtWrite(l));
                     if (data.truncated) qtWrite('… (truncated)', 'qt-muted');
                 })
                 .catch(() => qtWrite('[' + tag + '] Fetch failed', 'qt-error'));

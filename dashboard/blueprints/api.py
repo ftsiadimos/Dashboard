@@ -371,8 +371,8 @@ def custom_run():
         return jsonify({
             "ok": resp.ok,
             "status": resp.status_code,
-            "body": body[:4000],
-            "truncated": len(body) > 4000,
+            "body": body[:20000],
+            "truncated": len(body) > 20000,
         })
     except http_requests.RequestException as exc:
         return jsonify({"ok": False, "status": 0,
