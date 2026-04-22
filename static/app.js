@@ -251,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let isOpen    = false;
         let appsCache = null;
+        let customCmdsCache = null;
 
         // ── open / close ──────────────────────────────────────────────────────
         function qtOpen() {
@@ -259,6 +260,12 @@ document.addEventListener('DOMContentLoaded', () => {
             qtPanel.removeAttribute('aria-hidden');
             qtInput.focus();
             if (!appsCache) loadApps();
+            if (!customCmdsCache) {
+                fetch('/api/custom/commands')
+                    .then(r => r.json())
+                    .then(cmds => { customCmdsCache = cmds; })
+                    .catch(() => {});
+            }
         }
         function qtClose() {
             isOpen = false;
@@ -555,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
                 .then(r => r.json())
                 .then(data => {
-                    if (data.status === 'ok') qtWrite('Saved "' + name + '"', 'qt-success');
+                    if (data.status === 'ok') { customCmdsCache = null; qtWrite('Saved "' + name + '"', 'qt-success'); }
                     else qtWrite('Save failed: ' + (data.error || 'unknown'), 'qt-error');
                 })
                 .catch(() => qtWrite('Save failed', 'qt-error'));
@@ -566,6 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fetch('/api/custom/commands')
                 .then(r => r.json())
                 .then(cmds => {
+                    customCmdsCache = cmds;
                     if (!cmds.length) { qtWrite('No saved custom commands.', 'qt-muted'); return; }
                     qtWrite('Saved custom commands  (click to run):', 'qt-info');
                     cmds.forEach(cmd => {
@@ -606,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(r => r.json())
                 .then(data => {
                     if (data.status === 'ok') {
+                        customCmdsCache = null;
                         if (rowEl) rowEl.remove();
                         qtWrite('Deleted "' + name + '"', 'qt-success');
                     } else {
@@ -957,13 +966,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cur = qtInput.value;
                 // build candidate list: static completions + dynamic names
                 const appNames   = (appsCache || []).map(a => 'run ' + a.title);
-                const candidates = [...COMPLETIONS, ...appNames];
+                const customNames = (customCmdsCache || []).flatMap(c => ['run-custom ' + c.name, 'delete-custom ' + c.name]);
+                const candidates = [...COMPLETIONS, ...appNames, ...customNames];
                 const matches    = candidates.filter(c => c.startsWith(cur));
                 if (matches.length === 1) {
                     qtInput.value = matches[0];
                 } else if (matches.length > 1) {
-                    // show options in output area
-                    qtWrite(matches.join('   '), 'qt-muted');
+                    // hide bare prefix entries subsumed by longer matches
+                    const displayMatches = matches.filter(m => !matches.some(other => other !== m && other.startsWith(m)));
+                    const shown = displayMatches.length ? displayMatches : matches;
+                    // compute common prefix of all shown matches
+                    let commonPrefix = shown[0];
+                    for (const m of shown) {
+                        let i = 0;
+                        while (i < commonPrefix.length && i < m.length && commonPrefix[i] === m[i]) i++;
+                        commonPrefix = commonPrefix.slice(0, i);
+                    }
+                    // if common prefix ends with a space, strip it so only the argument names are shown
+                    const label = commonPrefix.endsWith(' ')
+                        ? shown.map(m => m.slice(commonPrefix.length))
+                        : shown;
+                    qtWrite(label.join('   '), 'qt-muted');
                     // fill the longest common prefix
                     let prefix = matches[0];
                     for (const m of matches) {

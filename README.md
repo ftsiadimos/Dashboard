@@ -175,8 +175,13 @@ used by the examples below.
   (e.g. `data.items.0.name`).
 * `{_len}` – length of the top‑level array returned by the API. Useful for
   counts.
+* `first` / `last` – when resolving an array, use `first` or `last` to pick the
+  first or last element, e.g. `{data.items.first.name}`.
+* `max_by(field)` / `min_by(field)` – choose the array item with the highest or
+  lowest value for a nested field, e.g. `{servers.max_by(cpu).name}`.
 * `regex:` – prefix a template with `regex:` to extract the first capture group
-  from an HTML/text response.
+  from an HTML/text response. You can also use a prefix before `regex:` like
+  `Status: regex:<title>([^<]+)</title>`.
 
 ### Example 1 – simple JSON value
 
@@ -203,7 +208,18 @@ Display Template   {_len} open tickets
 
 With a response like `[{}, {}, {}]` the tile will show `3 open tickets`.
 
-### Example 3 – GET with headers
+### Example 3 – array selection helpers
+
+```text
+API URL            https://status.example.com/api/servers
+Display Template   Top host: {servers.max_by(cpu).name}
+```
+
+For an array of server objects, `max_by(cpu)` picks the host with the highest
+CPU value. You can also use `min_by(field)`, or `first` / `last` to select the
+first or last item in a list.
+
+### Example 4 – GET with headers
 
 ```text
 API URL            https://api.myservice.com/metrics
