@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from dashboard.blueprints import bp as main
 from dashboard.database import Application, Category, get_db
-from dashboard.utils import allowed_file, get_settings, save_uploaded_icon
+from dashboard.utils import allowed_file, get_settings, save_icon_from_url, save_uploaded_icon
 
 
 @main.route("/apps")
@@ -50,10 +50,16 @@ def app_add():
             )
 
         icon_filename = ""
+        icon_url = request.form.get("icon_url", "").strip()
         if "icon" in request.files:
             file = request.files["icon"]
             if file and file.filename and allowed_file(file.filename):
                 icon_filename = save_uploaded_icon(file)
+        if not icon_filename and icon_url:
+            try:
+                icon_filename = save_icon_from_url(icon_url)
+            except Exception as exc:
+                flash(f"Could not download icon from URL: {exc}", "error")
 
         api_url = request.form.get("api_url", "").strip()
         api_method = request.form.get("api_method", "GET").strip()
@@ -127,6 +133,7 @@ def app_edit(app_id):
             )
 
         icon_filename = app.icon
+        icon_url = request.form.get("icon_url", "").strip()
         if "icon" in request.files:
             file = request.files["icon"]
             if file and file.filename and allowed_file(file.filename):
@@ -138,6 +145,18 @@ def app_edit(app_id):
                     if os.path.exists(old_path):
                         os.remove(old_path)
                 icon_filename = save_uploaded_icon(file)
+        if icon_url and icon_filename == app.icon:  # URL given, no file replaced it
+            try:
+                new_icon = save_icon_from_url(icon_url)
+                if app.icon:
+                    old_path = os.path.join(
+                        current_app.config["UPLOAD_FOLDER"], app.icon
+                    )
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                icon_filename = new_icon
+            except Exception as exc:
+                flash(f"Could not download icon from URL: {exc}", "error")
 
         api_url = request.form.get("api_url", "").strip()
         api_method = request.form.get("api_method", "GET").strip()

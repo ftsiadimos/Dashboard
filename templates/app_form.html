@@ -37,7 +37,7 @@
                 <input type="text" id="description" name="description" value="{{ app.description if app else '' }}" class="form-input" placeholder="Short description (optional)">
             </div>
             <div class="form-group">
-                <label for="icon">Icon</label>
+                <label for="icon">Icon — Upload file</label>
                 <input type="file" id="icon" name="icon" accept="image/*" class="form-input">
                 {% if app and app.icon %}
                 <div class="current-icon">
@@ -45,6 +45,19 @@
                     <img src="{{ url_for('main.uploaded_icon', filename=app.icon) }}" alt="" width="32" height="32">
                 </div>
                 {% endif %}
+            </div>
+            <div class="form-group">
+                <label for="icon_url">Icon — or provide URL</label>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <input type="url" id="icon_url" name="icon_url" class="form-input"
+                           placeholder="https://example.com/icon.png" style="flex:1;">
+                    <button type="button" id="icon-url-preview-btn" class="btn">Preview</button>
+                </div>
+                <small class="form-hint">The image will be downloaded, resized to 64×64 px, and saved as PNG. Overrides the uploaded file if both are given.</small>
+                <div id="icon-url-preview" style="display:none;margin-top:0.4rem;align-items:center;gap:0.5rem;">
+                    <span>Preview:</span>
+                    <img id="icon-url-preview-img" src="" alt="" width="32" height="32" style="border-radius:4px;">
+                </div>
             </div>
             <div class="form-group">
                 <label class="checkbox-label">
@@ -165,6 +178,24 @@
                 preview.style.display = 'flex';
             };
             reader.readAsDataURL(file);
+        });
+    }
+
+    // live preview for icon URL
+    const iconUrlInput = document.getElementById('icon_url');
+    const iconUrlPreviewBtn = document.getElementById('icon-url-preview-btn');
+    const iconUrlPreview = document.getElementById('icon-url-preview');
+    const iconUrlPreviewImg = document.getElementById('icon-url-preview-img');
+
+    if (iconUrlPreviewBtn) {
+        iconUrlPreviewBtn.addEventListener('click', () => {
+            const url = iconUrlInput.value.trim();
+            if (!url) return;
+            iconUrlPreviewImg.src = url;
+            iconUrlPreview.style.display = 'flex';
+            iconUrlPreviewImg.onerror = () => {
+                iconUrlPreview.style.display = 'none';
+            };
         });
     }
 </script>
