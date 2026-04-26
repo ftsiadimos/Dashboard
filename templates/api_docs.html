@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>API Documentation</h1>
+</div>
+
+<div id="redoc-container" style="background:#1e1e2e;border-radius:8px;overflow:hidden;min-height:80vh;"></div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    /* Force ALL text inside the main (centre) ReDoc panel to be light */
+    #redoc-container div[id],
+    #redoc-container section,
+    #redoc-container h1,
+    #redoc-container h2,
+    #redoc-container h3,
+    #redoc-container h4,
+    #redoc-container h5,
+    #redoc-container p,
+    #redoc-container span,
+    #redoc-container td,
+    #redoc-container th,
+    #redoc-container li,
+    #redoc-container label,
+    #redoc-container div {
+        color: #cdd6f4 !important;
+    }
+
+    /* Carve-out: response-code tab buttons need dark text on their light background */
+    #redoc-container [role="tab"] {
+        color: #1e1e2e !important;
+        font-weight: 600 !important;
+    }
+
+    /* Carve-out: inline code / monospace values stay green */
+    #redoc-container code,
+    #redoc-container pre,
+    #redoc-container pre span {
+        color: #a6e3a1 !important;
+    }
+
+    /* Carve-out: HTTP method badges (GET/POST/etc.) keep their own colours */
+    #redoc-container [class*="http-verb"],
+    #redoc-container [class*="HttpVerb"] {
+        color: #ffffff !important;
+    }
+
+    /* Carve-out: links */
+    #redoc-container a {
+        color: #89b4fa !important;
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/redoc@latest/bundles/redoc.standalone.js"></script>
+<script>
+    Redoc.init(
+        "{{ url_for('static', filename='openapi.json') }}",
+        {
+            theme: {
+                colors: {
+                    primary: { main: "#6c8ebf", contrastText: "#ffffff" },
+                    text: { primary: "#cdd6f4", secondary: "#a6adc8" },
+                    gray:   { 50: "#313244", 100: "#45475a" },
+                    border: { dark: "#45475a", light: "#313244" },
+                    responses: {
+                        success:  { color: "#1a3a1a", backgroundColor: "#a6e3a1" },
+                        error:    { color: "#3a1a1a", backgroundColor: "#f38ba8" },
+                        redirect: { color: "#3a2a1a", backgroundColor: "#fab387" },
+                        info:     { color: "#1a1a3a", backgroundColor: "#89b4fa" }
+                    }
+                },
+                schema: {
+                    linesColor:       "#45475a",
+                    typeNameColor:    "#cba6f7",
+                    typeTitleColor:   "#cba6f7",
+                    requireLabelColor:"#f38ba8",
+                    nestedBackground: "#161622"
+                },
+                typography: {
+                    fontFamily: "sans-serif",
+                    fontSize: "14px",
+                    headings: { fontFamily: "sans-serif" },
+                    code: {
+                        color: "#a6e3a1",
+                        backgroundColor: "#11111b",
+                        fontFamily: "monospace"
+                    },
+                    links: { color: "#89b4fa", hover: "#b4d0ff" }
+                },
+                sidebar: {
+                    backgroundColor: "#161622",
+                    textColor: "#cdd6f4",
+                    activeTextColor: "#89b4fa",
+                    groupItems:  { activeTextColor: "#89b4fa" },
+                    level1Items: { activeTextColor: "#89b4fa" },
+                    arrow: { color: "#a6adc8" }
+                },
+                rightPanel: {
+                    backgroundColor: "#11111b",
+                    textColor: "#cdd6f4"
+                }
+            }
+        },
+        document.getElementById("redoc-container")
+    );
+</script>
+{% endblock %}

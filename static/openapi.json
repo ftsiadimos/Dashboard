@@ -1,0 +1,536 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Dashboard API",
+    "description": "REST API exposed by the self-hosted Dashboard application. All endpoints are prefixed with `/api`.",
+    "version": "1.0.0"
+  },
+  "tags": [
+    { "name": "Apps",            "description": "App listing and stat polling" },
+    { "name": "Custom Commands", "description": "Saved HTTP command shortcuts" },
+    { "name": "Ollama",          "description": "AI / Ollama proxy endpoints" },
+    { "name": "Utility",         "description": "Miscellaneous utility routes" }
+  ],
+  "paths": {
+    "/api/reorder": {
+      "post": {
+        "tags": ["Utility"],
+        "summary": "Reorder apps or categories",
+        "description": "Persists a new sort order for apps or categories by accepting an ordered list of IDs.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReorderRequest" },
+              "example": { "items": [3, 1, 2], "type": "app" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order saved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StatusOk" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/app/{app_id}/stats": {
+      "get": {
+        "tags": ["Apps"],
+        "summary": "Fetch stats for a single app",
+        "description": "Calls the app's configured API URL and returns a formatted display value. Handles Nginx Proxy Manager auth automatically when configured.",
+        "parameters": [
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Database ID of the app"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stats fetched (ok may be false if the upstream call failed)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StatResult" },
+                "example": { "ok": true, "display": "42 active hosts" }
+              }
+            }
+          },
+          "404": {
+            "description": "App not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/apps/stats/batch": {
+      "post": {
+        "tags": ["Apps"],
+        "summary": "Batch-fetch stats for multiple apps",
+        "description": "Fetches stats for several apps in parallel (up to 20 workers). Returns a map of app ID → result.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BatchStatsRequest" },
+              "example": { "ids": [1, 2, 3] }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Results map",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BatchStatsResponse" },
+                "example": {
+                  "results": {
+                    "1": { "ok": true,  "display": "online" },
+                    "2": { "ok": false, "display": "error: connection refused" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/apps": {
+      "get": {
+        "tags": ["Apps"],
+        "summary": "List apps with API URLs",
+        "description": "Returns all apps that have an API URL configured. Used by the drop-down terminal `list` command.",
+        "responses": {
+          "200": {
+            "description": "Array of apps",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AppSummary" }
+                },
+                "example": [
+                  { "id": 1, "title": "Portainer", "api_url": "http://portainer:9000/api/status" }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/custom/commands": {
+      "get": {
+        "tags": ["Custom Commands"],
+        "summary": "List saved custom commands",
+        "description": "Returns all custom HTTP command shortcuts sorted by name.",
+        "responses": {
+          "200": {
+            "description": "Array of custom commands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/CustomCommand" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Custom Commands"],
+        "summary": "Save or update a custom command",
+        "description": "Creates a new command or overwrites an existing one with the same name.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CustomCommandWrite" },
+              "example": {
+                "name": "portainer-status",
+                "url": "http://portainer:9000/api/status",
+                "method": "GET",
+                "headers": "",
+                "payload": "",
+                "jq_filter": ".Status"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Command saved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StatusOk" }
+              }
+            }
+          },
+          "400": {
+            "description": "name or url missing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/custom/commands/{cmd_id}": {
+      "delete": {
+        "tags": ["Custom Commands"],
+        "summary": "Delete a custom command",
+        "parameters": [
+          {
+            "name": "cmd_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID of the command to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StatusOk" }
+              }
+            }
+          },
+          "404": {
+            "description": "Command not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/custom/run": {
+      "post": {
+        "tags": ["Custom Commands"],
+        "summary": "Execute an ad-hoc HTTP request",
+        "description": "Proxies an arbitrary HTTP request from the server side. Response body is truncated at 20 000 characters.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CustomRunRequest" },
+              "example": {
+                "url": "https://httpbin.org/get",
+                "method": "GET",
+                "headers": "{\"Accept\": \"application/json\"}",
+                "payload": ""
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proxy response (ok reflects the upstream HTTP status)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomRunResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "url is required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ollama/models": {
+      "get": {
+        "tags": ["Ollama"],
+        "summary": "List available Ollama models",
+        "description": "Queries the configured Ollama server and returns the list of locally available model names.",
+        "responses": {
+          "200": {
+            "description": "Model list (ok is false when the Ollama server is unreachable)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OllamaModelsResponse" },
+                "example": {
+                  "ok": true,
+                  "models": ["llama3.2:latest", "mistral:latest"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ollama/ask": {
+      "post": {
+        "tags": ["Ollama"],
+        "summary": "Send a single prompt to Ollama",
+        "description": "Sends one prompt to the configured Ollama model and returns the full response. Timeout: 120 s.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OllamaAskRequest" },
+              "example": { "prompt": "What is the capital of France?" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OllamaAskResponse" },
+                "example": { "ok": true, "response": "The capital of France is Paris." }
+              }
+            }
+          },
+          "400": {
+            "description": "prompt field missing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ollama/chat": {
+      "post": {
+        "tags": ["Ollama"],
+        "summary": "Multi-turn conversation with Ollama",
+        "description": "Forwards a conversation history to Ollama and returns the assistant reply. On context overflow (HTTP 500 from Ollama) the history is automatically trimmed and retried. The system prompt configured in Settings is prepended automatically.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OllamaChatRequest" },
+              "example": {
+                "messages": [
+                  { "role": "user", "content": "Hello!" },
+                  { "role": "assistant", "content": "Hi there! How can I help?" },
+                  { "role": "user", "content": "What can you do?" }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Assistant reply",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OllamaChatResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "messages array missing or invalid",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StatusOk": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "ok" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "example": "Invalid payload" }
+        }
+      },
+      "ReorderRequest": {
+        "type": "object",
+        "required": ["items", "type"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "Ordered list of IDs representing the new sort order"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["app", "category"],
+            "description": "Whether to reorder apps or categories"
+          }
+        }
+      },
+      "StatResult": {
+        "type": "object",
+        "properties": {
+          "ok":      { "type": "boolean" },
+          "display": { "type": "string", "description": "Human-readable value extracted from the API response" }
+        }
+      },
+      "BatchStatsRequest": {
+        "type": "object",
+        "required": ["ids"],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "App IDs to fetch stats for"
+          }
+        }
+      },
+      "BatchStatsResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "object",
+            "additionalProperties": { "$ref": "#/components/schemas/StatResult" },
+            "description": "Map of app ID (string key) → stat result"
+          }
+        }
+      },
+      "AppSummary": {
+        "type": "object",
+        "properties": {
+          "id":      { "type": "integer" },
+          "title":   { "type": "string" },
+          "api_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "CustomCommand": {
+        "type": "object",
+        "properties": {
+          "id":        { "type": "integer" },
+          "name":      { "type": "string" },
+          "method":    { "type": "string", "enum": ["GET","POST","PUT","PATCH","DELETE"] },
+          "url":       { "type": "string", "format": "uri" },
+          "headers":   { "type": "string", "description": "JSON string of header key-value pairs" },
+          "payload":   { "type": "string", "description": "Raw request body" },
+          "jq_filter": { "type": "string", "description": "Optional jq-like path to extract from the response" }
+        }
+      },
+      "CustomCommandWrite": {
+        "type": "object",
+        "required": ["name", "url"],
+        "properties": {
+          "name":      { "type": "string" },
+          "url":       { "type": "string", "format": "uri" },
+          "method":    { "type": "string", "enum": ["GET","POST","PUT","PATCH","DELETE"], "default": "GET" },
+          "headers":   { "type": "string", "description": "JSON string of header key-value pairs", "default": "" },
+          "payload":   { "type": "string", "description": "Raw request body", "default": "" },
+          "jq_filter": { "type": "string", "description": "Optional jq-like path to extract from the response", "default": "" }
+        }
+      },
+      "CustomRunRequest": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url":     { "type": "string", "format": "uri" },
+          "method":  { "type": "string", "enum": ["GET","POST","PUT","PATCH","DELETE"], "default": "GET" },
+          "headers": { "type": "string", "description": "JSON string of request headers", "default": "" },
+          "payload": { "type": "string", "description": "Raw request body", "default": "" }
+        }
+      },
+      "CustomRunResponse": {
+        "type": "object",
+        "properties": {
+          "ok":        { "type": "boolean", "description": "True when the upstream HTTP status is 2xx" },
+          "status":    { "type": "integer", "description": "Upstream HTTP status code (0 on network error)" },
+          "body":      { "type": "string",  "description": "Response body (truncated to 20 000 chars)" },
+          "truncated": { "type": "boolean", "description": "True when the body was truncated" }
+        }
+      },
+      "OllamaModelsResponse": {
+        "type": "object",
+        "properties": {
+          "ok":     { "type": "boolean" },
+          "models": { "type": "array", "items": { "type": "string" } },
+          "error":  { "type": "string", "description": "Present only when ok is false" }
+        }
+      },
+      "OllamaAskRequest": {
+        "type": "object",
+        "required": ["prompt"],
+        "properties": {
+          "prompt": { "type": "string" }
+        }
+      },
+      "OllamaAskResponse": {
+        "type": "object",
+        "properties": {
+          "ok":       { "type": "boolean" },
+          "response": { "type": "string", "description": "Model reply text" },
+          "error":    { "type": "string", "description": "Present only when ok is false" }
+        }
+      },
+      "OllamaChatMessage": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role":    { "type": "string", "enum": ["user", "assistant", "system"] },
+          "content": { "type": "string" }
+        }
+      },
+      "OllamaChatRequest": {
+        "type": "object",
+        "required": ["messages"],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OllamaChatMessage" }
+          }
+        }
+      },
+      "OllamaChatResponse": {
+        "type": "object",
+        "properties": {
+          "ok":       { "type": "boolean" },
+          "response": { "type": "string", "description": "Assistant reply text" },
+          "trimmed":  { "type": "boolean", "description": "True when history was trimmed due to context overflow" },
+          "error":    { "type": "string", "description": "Present only when ok is false" }
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import json
 
 import requests as http_requests
-from flask import current_app, jsonify, request
+from flask import current_app, jsonify, render_template, request
 
 from dashboard.blueprints import bp as main
 from dashboard.database import Application, Category, CustomCommand, get_db
@@ -496,3 +496,11 @@ def ollama_chat():
         return jsonify({"ok": False, "error": "Request timed out — the model took too long to respond. Try a shorter message or a faster model."})
     except http_requests.RequestException as exc:
         return jsonify({"ok": False, "error": f"{exc.__class__.__name__}: {exc}"})
+
+
+# ── API documentation ─────────────────────────────────────────────────────────
+
+@main.route("/api/docs")
+def api_docs():
+    from dashboard.utils import get_settings
+    return render_template("api_docs.html", settings=get_settings())
