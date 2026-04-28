@@ -658,6 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 qtWrite('  ask <question>              – ask the configured Ollama AI model', 'qt-muted');
                 qtWrite('  chat                        – enter conversation mode with Ollama (keeps history)', 'qt-muted');
                 qtWrite('  clear                       – clear this output', 'qt-muted');
+                qtWrite('  search <query>              – filter tiles by name (no arg to reset)', 'qt-muted');
                 qtWrite('Hotkeys:', 'qt-info');
                 qtWrite('  Ctrl+Shift+F                – toggle fullscreen terminal', 'qt-muted');
                 return;
@@ -764,6 +765,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 const req = parseCurl(tokens);
                 if (!req.url) { qtWrite('Usage: curl [opts] <url> [| jq <filter>]', 'qt-error'); return; }
                 qtRunCustom(req, null, jqFilter);
+                return;
+            }
+
+            if (cmd.startsWith('search ') || cmd === 'search') {
+                const query = cmd.startsWith('search ') ? cmd.slice(7).trim() : '';
+                const allCards = Array.from(document.querySelectorAll('.app-card'));
+                if (!query) {
+                    allCards.forEach(card => { card.style.display = ''; });
+                    document.querySelectorAll('.section').forEach(sec => { sec.style.display = ''; });
+                    qtWrite('Search cleared — showing all tiles.', 'qt-muted');
+                    return;
+                }
+                const lower = query.toLowerCase();
+                let matches = 0;
+                allCards.forEach(card => {
+                    const titleEl = card.querySelector('.app-title');
+                    const title = titleEl ? titleEl.textContent.toLowerCase() : '';
+                    const visible = title.includes(lower);
+                    card.style.display = visible ? '' : 'none';
+                    if (visible) matches++;
+                });
+                document.querySelectorAll('.section').forEach(sec => {
+                    const hasVisible = Array.from(sec.querySelectorAll('.app-card'))
+                        .some(c => c.style.display !== 'none');
+                    sec.style.display = hasVisible ? '' : 'none';
+                });
+                if (matches === 0) {
+                    qtWrite('No tiles match "' + escapeHtml(query) + '".', 'qt-error');
+                } else {
+                    qtWrite(
+                        'Showing ' + matches + ' tile' + (matches === 1 ? '' : 's') +
+                        ' matching "' + escapeHtml(query) + '" — run search with no args to reset.',
+                        'qt-success'
+                    );
+                }
                 return;
             }
 
@@ -911,7 +947,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const COMPLETIONS = [
             'help', 'list', 'list-custom', 'clear',
             'run ', 'run-custom ', 'curl ', 'save ',
-            'delete-custom ', 'ask ', 'chat',
+            'delete-custom ', 'ask ', 'chat', 'search ',
         ];
 
         qtInput.addEventListener('keydown', e => {
@@ -964,11 +1000,42 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Tab') {
                 e.preventDefault();
                 const cur = qtInput.value;
-                // build candidate list: static completions + dynamic names
+                // build candidate list: static completions + dynamic names + search completions
                 const appNames   = (appsCache || []).map(a => 'run ' + a.title);
                 const customNames = (customCmdsCache || []).flatMap(c => ['run-custom ' + c.name, 'delete-custom ' + c.name]);
-                const candidates = [...COMPLETIONS, ...appNames, ...customNames];
-                const matches    = candidates.filter(c => c.startsWith(cur));
+                let candidates = [...COMPLETIONS, ...appNames, ...customNames];
+                // Add search <tile> completions
+                if (cur.startsWith('search ')) {
+                    const q = cur.slice(7).toLowerCase();
+                    const searchNames = (appsCache || []).map(a => 'search ' + a.title);
+                    candidates = candidates.concat(searchNames);
+                }
+                // Allow partial matching for the first word (e.g., 'se' → 'search')
+                let matches = candidates.filter(c => c.startsWith(cur));
+                if (matches.length === 0 && cur) {
+                    // Try to match partials for the first word only
+                    const firstWord = cur.split(' ')[0];
+                    const afterSpace = cur.indexOf(' ') !== -1 ? cur.slice(cur.indexOf(' ')) : '';
+                    const partialMatches = candidates.filter(c => c.startsWith(firstWord));
+                    if (partialMatches.length > 0) {
+                        // If only one match, autocomplete it
+                        if (partialMatches.length === 1) {
+                            qtInput.value = partialMatches[0] + afterSpace;
+                            return;
+                        } else {
+                            // If multiple, show options and fill common prefix
+                            let commonPrefix = partialMatches[0];
+                            for (const m of partialMatches) {
+                                let i = 0;
+                                while (i < commonPrefix.length && i < m.length && commonPrefix[i] === m[i]) i++;
+                                commonPrefix = commonPrefix.slice(0, i);
+                            }
+                            qtWrite(partialMatches.map(m => m.slice(commonPrefix.length)).join('   '), 'qt-muted');
+                            if (commonPrefix.length > cur.length) qtInput.value = commonPrefix;
+                            return;
+                        }
+                    }
+                }
                 if (matches.length === 1) {
                     qtInput.value = matches[0];
                 } else if (matches.length > 1) {
