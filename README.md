@@ -275,6 +275,7 @@ Press the configured hotkey (default: `` ` ``) from any page to slide a Quake-st
 | `list-custom` | List all saved custom commands as clickable rows |
 | `run-custom <name>` | Re-run a saved custom command by name (partial match) |
 | `delete-custom <name>` | Delete a saved custom command by name |
+| `search <query>` | Filter tiles by name (no query resets the search) |
 | `clear` | Clear the terminal output |
 
 ### curl flags
