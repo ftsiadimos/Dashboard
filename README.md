@@ -32,7 +32,7 @@ A lightweight, self-hosted application launcher and monitoring dashboard built w
 - **Application Management** — Add, edit, delete, and organize web applications
 - **Category Support** — Create, edit, reorder, and delete categories with per-category app grouping
 - **Pin Favorites** — Pin important applications to keep them at the top
-- **Custom Icons** — Upload custom icon files per app or use icon URLs
+- **Custom Icons** — Upload custom icon files per app or provide an icon URL; remote images are downloaded, resized to 64×64, and saved automatically
 - **Color Coding** — Assign a color to apps for visual grouping (picker and hex input synced)
 - **API Tiles** — Poll an API endpoint with support for method, headers, payload, interval, and template formatting
 - **Blinking Alert Cards** — Highlight app cards with pulsating warning/danger state when alert keywords + counts trigger
