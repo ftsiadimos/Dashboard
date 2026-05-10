@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Self-hosted Application Launcher</title>
+  <meta name="description" content="A lightweight, self-hosted application launcher and monitoring dashboard built with Python + Flask." />
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3147;
+      --accent: #4f8ef7;
+      --accent2: #7c5cbf;
+      --text: #e2e8f0;
+      --muted: #8b93a7;
+      --code-bg: #12151f;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #0f1117 0%, #1a1d27 50%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      padding: 80px 24px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(79,142,247,.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 28px;
+    }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+    .badges img { height: 20px; }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: var(--radius);
+      font-size: .95rem;
+      font-weight: 600;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+    /* ── Layout ── */
+    .container { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+
+    section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+    section:last-of-type { border-bottom: none; }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 32px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2 .icon { font-size: 1.4rem; }
+
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 24px 0 8px;
+    }
+
+    p { margin-bottom: 14px; color: var(--muted); }
+
+    /* ── Feature grid ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      transition: border-color .2s, transform .2s;
+    }
+    .feature-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .feature-card .icon { font-size: 1.5rem; margin-bottom: 10px; display: block; }
+    .feature-card strong { display: block; font-size: .95rem; margin-bottom: 4px; color: var(--text); }
+    .feature-card span { font-size: .87rem; color: var(--muted); }
+
+    /* ── Install tabs ── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+    .tab-btn {
+      padding: 8px 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: .9rem;
+      transition: all .15s;
+    }
+    .tab-btn.active, .tab-btn:hover {
+      background: var(--surface2);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Code blocks ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      overflow-x: auto;
+      font-size: .87rem;
+      line-height: 1.65;
+      margin-bottom: 16px;
+    }
+    code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+    p code, li code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: .9em;
+      color: var(--accent);
+    }
+
+    /* ── API examples ── */
+    .api-example {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .api-example .head {
+      background: var(--surface2);
+      padding: 10px 18px;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+    }
+    .api-example pre { border: none; border-radius: 0; margin: 0; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th { text-align: left; color: var(--muted); font-weight: 600; padding: 8px 14px; border-bottom: 1px solid var(--border); }
+    td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    td code { color: var(--accent); }
+
+    /* ── Token pills ── */
+    .pill-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 13px;
+      font-size: .83rem;
+      color: var(--accent);
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+
+    /* ── Screenshot ── */
+    .screenshot-wrap { text-align: center; margin: 32px 0; }
+    .screenshot-wrap img {
+      max-width: 100%;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 40px rgba(0,0,0,.5);
+    }
+    .screenshot-wrap figcaption { font-size: .85rem; color: var(--muted); margin-top: 10px; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 40px 24px;
+      color: var(--muted);
+      font-size: .9rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .tabs { flex-wrap: wrap; }
+      .btn-row { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
+<header class="hero">
+  <h1>Dashboard</h1>
+  <p>A lightweight, self-hosted application launcher &amp; monitoring dashboard built with Python + Flask.</p>
+  <div class="badges">
+    <img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python 3.10+">
+    <img src="https://img.shields.io/badge/Flask-3.x-green" alt="Flask 3.x">
+    <img src="https://img.shields.io/badge/version-3.4.0-informational" alt="Version 3.4.0">
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License">
+    <img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker" alt="Docker ready">
+  </div>
+  <div class="btn-row">
+    <a class="btn btn-primary" href="https://github.com/ftsiadimos/dashboard">View on GitHub</a>
+    <a class="btn btn-outline" href="https://hub.docker.com/r/ftsiadimos/dashboard">Docker Hub</a>
+    <a class="btn btn-outline" href="#install">Get Started</a>
+  </div>
+</header>
+
+<!-- ══ SCREENSHOT ════════════════════════════════════════════════════════ -->
+<div class="container">
+  <figure class="screenshot-wrap" style="padding-top:48px">
+    <img src="../mis/image.webp" alt="Dashboard screenshot" />
+    <figcaption>Dashboard — dark theme with application tiles and API monitoring cards</figcaption>
+  </figure>
+</div>
+
+<!-- ══ FEATURES ══════════════════════════════════════════════════════════ -->
+<section id="features">
+  <div class="container">
+    <h2><span class="icon">✨</span> Features</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="icon">🗂️</span>
+        <strong>Application Management</strong>
+        <span>Add, edit, delete, and organise web applications with a clean CRUD interface.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">📂</span>
+        <strong>Category Support</strong>
+        <span>Create, edit, reorder, and delete categories with per-category app grouping.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">📌</span>
+        <strong>Pin Favourites</strong>
+        <span>Pin important applications to keep them pinned at the top of the dashboard.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🖼️</span>
+        <strong>Custom Icons</strong>
+        <span>Upload icons or provide a URL — remote images are downloaded, resized to 64×64, and saved automatically.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🎨</span>
+        <strong>Color Coding</strong>
+        <span>Assign a colour to any app for visual grouping with a colour picker and hex input synced.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">📡</span>
+        <strong>API Tiles</strong>
+        <span>Poll any HTTP endpoint with configurable method, headers, payload, interval, and template formatting.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🚨</span>
+        <strong>Blinking Alert Cards</strong>
+        <span>Cards pulse in warning/danger state when alert keywords and counts match configured thresholds.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">📦</span>
+        <strong>Import / Export JSON</strong>
+        <span>Export all apps and categories to JSON and restore them in Settings at any time.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🔍</span>
+        <strong>Search Provider</strong>
+        <span>Custom search engine URL and in-dashboard search bar toggle from Settings.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">📱</span>
+        <strong>Responsive Grid</strong>
+        <span>Automatic column layout with mobile-friendly breakpoints — works on phones and tablets.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🌙</span>
+        <strong>Dark Theme</strong>
+        <span>Built-in polished dark styling with a background image option.</span>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🖥️</span>
+        <strong>Drop-down Terminal</strong>
+        <span>Quake-style in-browser terminal console triggered by a configurable hotkey.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ QUICK START ════════════════════════════════════════════════════════ -->
+<section id="install">
+  <div class="container">
+    <h2><span class="icon">🚀</span> Quick Start</h2>
+    <p>Choose the installation method that fits your environment. The dashboard listens on port <code>6008</code> by default.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(event,'docker')">🐳 Docker</button>
+      <button class="tab-btn" onclick="switchTab(event,'compose')">📄 Docker Compose</button>
+      <button class="tab-btn" onclick="switchTab(event,'source')">🐍 From Source</button>
+    </div>
+
+    <!-- Docker -->
+    <div class="tab-panel active" id="tab-docker">
+      <pre><code># Pull from Docker Hub
+docker pull ftsiadimos/dashboard:latest
+
+docker run -d --restart unless-stopped \
+  -p 6008:6008 \
+  --name=dashboard \
+  -v $(pwd)/data:/app/data \
+  ftsiadimos/dashboard:latest</code></pre>
+      <pre><code># Or pull from GitHub Container Registry
+docker pull ghcr.io/ftsiadimos/dashboard:latest
+
+docker run -d --restart unless-stopped \
+  -p 6008:6008 \
+  --name=dashboard \
+  -v $(pwd)/data:/app/data \
+  ghcr.io/ftsiadimos/dashboard:latest</code></pre>
+    </div>
+
+    <!-- Docker Compose -->
+    <div class="tab-panel" id="tab-compose">
+      <pre><code># docker-compose.yml
+version: '3.8'
+
+services:
+  dashboard:
+    image: ftsiadimos/dashboard:latest
+    container_name: dashboard
+    ports:
+      - "6008:6008"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped</code></pre>
+      <pre><code>docker-compose up -d</code></pre>
+    </div>
+
+    <!-- From Source -->
+    <div class="tab-panel" id="tab-source">
+      <pre><code>git clone https://github.com/ftsiadimos/dashboard.git
+cd dashboard
+
+python -m venv venv
+source venv/bin/activate     # Windows: venv\Scripts\activate
+
+pip install -r requirements.txt
+
+flask run --host=0.0.0.0 --port=6008</code></pre>
+    </div>
+
+    <p>Then open <a href="http://localhost:6008">http://localhost:6008</a> in your browser and configure via <strong>Settings</strong>.</p>
+  </div>
+</section>
+
+<!-- ══ API TILES ══════════════════════════════════════════════════════════ -->
+<section id="api">
+  <div class="container">
+    <h2><span class="icon">📡</span> API Tile Integration</h2>
+    <p>
+      Point any app tile at an HTTP endpoint to create a live monitoring card.
+      The dashboard fetches the endpoint at your chosen interval and renders the
+      response using a lightweight template syntax — no plugins, no code required.
+    </p>
+
+    <h3>Template Tokens</h3>
+    <div class="pill-grid">
+      <span class="pill">{path.to.value}</span>
+      <span class="pill">{_len}</span>
+      <span class="pill">{data.items.first.name}</span>
+      <span class="pill">{data.items.last.name}</span>
+      <span class="pill">{servers.max_by(cpu).name}</span>
+      <span class="pill">{servers.min_by(cpu).name}</span>
+      <span class="pill">regex:&lt;pattern&gt;</span>
+    </div>
+
+    <h3>Examples</h3>
+
+    <div class="api-example">
+      <div class="head">Example 1 — Simple JSON value</div>
+      <pre><code>API URL           https://status.example.com/api/health
+Display Template  Status: {status}
+# Response {"status":"ok"}  →  "Status: ok"</code></pre>
+    </div>
+
+    <div class="api-example">
+      <div class="head">Example 2 — Nested JSON &amp; array length</div>
+      <pre><code>API URL           https://weather.example.com/forecast
+Display Template  {forecast.daily.0.temperature}° / {forecast.daily.0.condition}
+
+# Count items in a top-level array
+API URL           https://tickets.example.com/open
+Display Template  {_len} open tickets
+# Response [{}, {}, {}]  →  "3 open tickets"</code></pre>
+    </div>
+
+    <div class="api-example">
+      <div class="head">Example 3 — Array helpers (max_by / min_by / first / last)</div>
+      <pre><code>API URL           https://status.example.com/api/servers
+Display Template  Top host: {servers.max_by(cpu).name}</code></pre>
+    </div>
+
+    <div class="api-example">
+      <div class="head">Example 4 — POST with headers &amp; body</div>
+      <pre><code>API URL           https://zabbix.example.com/api_jsonrpc.php
+API Method        POST
+Headers           {"Content-Type":"application/json"}
+Payload           {"jsonrpc":"2.0","method":"problem.get","params":{"output":["problemid"],"countOutput":true},"auth":"TOKEN","id":1}
+Display Template  {_len} problems</code></pre>
+    </div>
+
+    <div class="api-example">
+      <div class="head">Example 5 — Regex extraction from HTML</div>
+      <pre><code>API URL           https://statuspage.example.com
+Display Template  regex:&lt;title&gt;([^&lt;]+)&lt;/title&gt;
+# Extracts the first capture group from the HTML response</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TERMINAL ═══════════════════════════════════════════════════════════ -->
+<section id="terminal">
+  <div class="container">
+    <h2><span class="icon">🖥️</span> Drop-down Terminal Console</h2>
+    <p>
+      Press the configured hotkey (default: <code>`</code>) from any page to slide a
+      Quake-style terminal panel down. Press it again or hit <code>Esc</code> to close.
+    </p>
+
+    <figure class="screenshot-wrap">
+      <img src="../mis/terminal-image.webp" alt="Quake-style terminal console" />
+      <figcaption>Quake-style drop-down terminal console</figcaption>
+    </figure>
+
+    <h3>Commands</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Command</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>help</code></td><td>Show all available commands</td></tr>
+          <tr><td><code>list</code></td><td>List all app tiles as clickable rows</td></tr>
+          <tr><td><code>run &lt;name&gt;</code></td><td>Run a tile's API call by name (partial match)</td></tr>
+          <tr><td><code>curl [opts] &lt;url&gt;</code></td><td>Execute an ad-hoc HTTP request</td></tr>
+          <tr><td><code>curl … | jq &lt;filter&gt;</code></td><td>Pipe response through a client-side jq filter</td></tr>
+          <tr><td><code>save &lt;name&gt; curl …</code></td><td>Save a curl command under a name for later replay</td></tr>
+          <tr><td><code>list-custom</code></td><td>List all saved custom commands</td></tr>
+          <tr><td><code>run-custom &lt;name&gt;</code></td><td>Re-run a saved custom command by name</td></tr>
+          <tr><td><code>delete-custom &lt;name&gt;</code></td><td>Delete a saved custom command by name</td></tr>
+          <tr><td><code>search &lt;query&gt;</code></td><td>Filter tiles by name</td></tr>
+          <tr><td><code>clear</code></td><td>Clear the terminal output</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>curl Flags</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>-X &lt;METHOD&gt;</code></td><td>HTTP method (default: GET)</td></tr>
+          <tr><td><code>-H &lt;header&gt;</code></td><td>Add a request header (repeatable)</td></tr>
+          <tr><td><code>-d &lt;body&gt;</code></td><td>Request body (JSON or plain text)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Keyboard Shortcuts</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Key</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>`</code> (configurable)</td><td>Toggle terminal open / closed</td></tr>
+          <tr><td><code>Esc</code></td><td>Close terminal</td></tr>
+          <tr><td><code>↑</code> / <code>↓</code></td><td>Walk through command history</td></tr>
+          <tr><td><code>Tab</code></td><td>Autocomplete command or app name</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Appearance &amp; Settings</h3>
+    <p>Open <strong>Settings → Terminal Console</strong> to customise the trigger key, height, opacity, font size, font family, accent colour, and animation speed.</p>
+  </div>
+</section>
+
+<!-- ══ LICENSE ═══════════════════════════════════════════════════════════ -->
+<section id="license">
+  <div class="container">
+    <h2><span class="icon">📄</span> License</h2>
+    <p>Released under the <strong>MIT License</strong>. See the <a href="https://github.com/ftsiadimos/dashboard/blob/main/LICENSE">LICENSE</a> file for details.</p>
+  </div>
+</section>
+
+<!-- ══ FOOTER ════════════════════════════════════════════════════════════ -->
+<footer>
+  <p>Dashboard v3.4.0 &mdash; Built with Python + Flask &mdash; <a href="https://github.com/ftsiadimos/dashboard">GitHub</a></p>
+</footer>
+
+<script>
+  function switchTab(e, id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    document.getElementById('tab-' + id).classList.add('active');
+  }
+</script>
+
+</body>
+</html>
