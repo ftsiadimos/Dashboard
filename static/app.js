@@ -259,7 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
             qtPanel.classList.add('qt-open');
             qtPanel.removeAttribute('aria-hidden');
             qtInput.focus();
-            if (!appsCache) loadApps();
             if (!customCmdsCache) {
                 fetch('/api/custom/commands')
                     .then(r => r.json())
