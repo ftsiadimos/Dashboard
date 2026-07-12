@@ -529,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
-        function qtRunCustom(req, label, jqFilter) {
+        function qtRunCustom(req, label, jqFilter, showChart, chartType) {
             const tag = label || req.method + ' ' + req.url;
             const hint = jqFilter ? ' | jq ' + jqFilter : '';
             qtWrite('  ' + req.method + ' ' + req.url + hint + ' …', 'qt-muted');
@@ -540,8 +540,80 @@ document.addEventListener('DOMContentLoaded', () => {
             })
                 .then(r => r.json())
                 .then(data => {
-                    const prefix = data.ok ? 'qt-success' : 'qt-error';
-                    qtWrite('HTTP ' + data.status, prefix);
+                    if (!data.ok) {
+                        qtWrite('HTTP ' + data.status + ': ' + (data.body || 'Error'), 'qt-error');
+                        return;
+                    }
+                    qtWrite('HTTP ' + data.status, 'qt-success');
+
+                    // If chart mode, render chart and skip text output
+                    if (showChart) {
+                        let parsed;
+                        try { parsed = JSON.parse(data.body); }
+                        catch (_) { qtWrite('Response is not valid JSON.', 'qt-error'); return; }
+
+                        let labels = [];
+                        let values = [];
+
+                        // Pattern 1: top-level object with numeric values
+                        if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+                            const entries = Object.entries(parsed);
+                            const numericEntries = entries.filter(([k, v]) => typeof v === 'number');
+                            if (numericEntries.length >= 2) {
+                                labels = numericEntries.map(([k]) => k);
+                                values = numericEntries.map(([, v]) => v);
+                            } else {
+                                labels = entries.map(([k]) => k);
+                                values = entries.map(([, v]) => typeof v === 'number' ? v : 0);
+                            }
+                        }
+                        // Pattern 2: array of objects with a common numeric field
+                        else if (Array.isArray(parsed) && parsed.length >= 2) {
+                            const first = parsed[0];
+                            if (typeof first === 'object' && first !== null) {
+                                const numFields = Object.keys(first).filter(k => typeof first[k] === 'number');
+                                if (numFields.length >= 1) {
+                                    const field = numFields[0];
+                                    labels = parsed.map(item => item.name || item.label || item.key || item.title || item.id || JSON.stringify(item));
+                                    values = parsed.map(item => item[field]);
+                                } else {
+                                    labels = parsed.map((_, i) => 'Item ' + (i + 1));
+                                    values = parsed.map(() => 1);
+                                }
+                            } else {
+                                const counts = {};
+                                parsed.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+                                labels = Object.keys(counts);
+                                values = Object.values(counts);
+                            }
+                        }
+                        // Pattern 3: nested data object
+                        else {
+                            const nested = parsed.data || parsed.result || parsed.items || parsed.results || parsed;
+                            if (typeof nested === 'object' && !Array.isArray(nested)) {
+                                labels = Object.keys(nested);
+                                values = Object.values(nested).map(v => typeof v === 'number' ? v : 0);
+                            } else if (Array.isArray(nested)) {
+                                labels = nested.map((_, i) => 'Item ' + (i + 1));
+                                values = nested.map(() => 1);
+                            } else {
+                                qtWrite('Data format not chartable. Raw:', 'qt-muted');
+                                qtWrite(JSON.stringify(parsed, null, 2), 'qt-muted');
+                                return;
+                            }
+                        }
+
+                        if (chartType === 'bar') {
+                            qtWrite('  Rendering bar chart …', 'qt-info');
+                            qtRenderBarChart(labels, values, tag);
+                        } else {
+                            qtWrite('  Rendering donut chart …', 'qt-info');
+                            qtRenderDonutChart(labels, values, tag);
+                        }
+                        return;
+                    }
+
+                    // Normal text output mode
                     let output = data.body || '';
                     if (jqFilter && data.ok) {
                         try { output = applyJq(JSON.parse(data.body), jqFilter); } catch (_) {}
@@ -550,6 +622,219 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.truncated) qtWrite('… (truncated)', 'qt-muted');
                 })
                 .catch(() => qtWrite('[' + tag + '] Fetch failed', 'qt-error'));
+        }
+
+        function qtRenderDonutChart(labels, values, title) {
+            const qtOutput = document.getElementById('qt-output');
+
+            // Create a container div for the chart
+            const container = document.createElement('div');
+            container.className = 'qt-chart-container';
+
+            const chartTitle = document.createElement('div');
+            chartTitle.className = 'qt-chart-title';
+            chartTitle.textContent = title || 'Chart';
+            container.appendChild(chartTitle);
+
+            const canvas = document.createElement('canvas');
+            canvas.className = 'qt-chart-canvas';
+            canvas.width = 320;
+            canvas.height = 320;
+            container.appendChild(canvas);
+
+            // Summary (without Total line)
+            const summary = document.createElement('div');
+            summary.className = 'qt-chart-summary';
+            const total = values.reduce((a, b) => a + b, 0);
+            let summaryLines = [];
+            labels.forEach((label, i) => {
+                const pct = total > 0 ? ((values[i] / total) * 100).toFixed(1) : 0;
+                summaryLines.push('  ' + label + ': ' + values[i] + ' (' + pct + '%)');
+            });
+            summary.textContent = summaryLines.join('\n');
+            container.appendChild(summary);
+
+            qtOutput.appendChild(container);
+            qtOutput.scrollTop = qtOutput.scrollHeight;
+
+            // Draw donut chart on canvas
+            try {
+                const ctx = canvas.getContext('2d');
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const radius = 130;
+                const innerRadius = 80;
+
+                const donutColors = [
+                    '#2ecc71', '#e74c5a', '#f39c12', '#3498db', '#9b59b6',
+                    '#1abc9c', '#e67e22', '#e84393', '#00b894', '#6c5ce7',
+                    '#fd79a8', '#00cec9', '#fdcb6e', '#d63031', '#0984e3',
+                    '#55a3f5', '#74b9ff', '#a29bfe', '#636e72', '#b2bec3'
+                ];
+
+                let startAngle = -Math.PI / 2;
+                values.forEach((val, i) => {
+                    if (val === 0) return;
+                    const sliceAngle = (val / total) * 2 * Math.PI;
+                    const endAngle = startAngle + sliceAngle;
+                    const midAngle = startAngle + sliceAngle / 2;
+
+                    // Draw slice
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius, startAngle, endAngle);
+                    ctx.arc(cx, cy, innerRadius, endAngle, startAngle, true);
+                    ctx.closePath();
+                    ctx.fillStyle = donutColors[i % donutColors.length];
+                    ctx.fill();
+
+                    // Draw white border between slices
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius, startAngle, endAngle);
+                    ctx.strokeStyle = '#1a1a2e';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Draw value label on the slice
+                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                    const labelRadius = (radius + innerRadius) / 2;
+                    const lx = cx + Math.cos(midAngle) * labelRadius;
+                    const ly = cy + Math.sin(midAngle) * labelRadius;
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    // Value (larger)
+                    ctx.font = 'bold 16px Segoe UI, system-ui, sans-serif';
+                    ctx.fillText(val, lx, ly - 8);
+
+                    // Percentage (smaller)
+                    ctx.font = '11px Segoe UI, system-ui, sans-serif';
+                    ctx.fillText(pct + '%', lx, ly + 8);
+
+                    startAngle = endAngle;
+                });
+
+                // Center text (just the label, no total)
+                ctx.fillStyle = '#a8a8a8';
+                ctx.font = '12px Segoe UI, system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(title || 'total', cx, cy);
+            } catch (err) {
+                qtWrite('  Chart rendering error: ' + err.message, 'qt-error');
+            }
+        }
+
+        function qtRenderBarChart(labels, values, title) {
+            const qtOutput = document.getElementById('qt-output');
+
+            const container = document.createElement('div');
+            container.className = 'qt-chart-container';
+
+            const chartTitle = document.createElement('div');
+            chartTitle.className = 'qt-chart-title';
+            chartTitle.textContent = title || 'Chart';
+            container.appendChild(chartTitle);
+
+            const canvas = document.createElement('canvas');
+            canvas.className = 'qt-chart-canvas';
+            canvas.width = 400;
+            canvas.height = 320;
+            container.appendChild(canvas);
+
+            // Summary
+            const summary = document.createElement('div');
+            summary.className = 'qt-chart-summary';
+            let summaryLines = [];
+            labels.forEach((label, i) => {
+                summaryLines.push('  ' + label + ': ' + values[i]);
+            });
+            summary.textContent = summaryLines.join('\n');
+            container.appendChild(summary);
+
+            qtOutput.appendChild(container);
+            qtOutput.scrollTop = qtOutput.scrollHeight;
+
+            try {
+                const ctx = canvas.getContext('2d');
+                const padding = { top: 20, right: 20, bottom: 60, left: 50 };
+                const chartW = canvas.width - padding.left - padding.right;
+                const chartH = canvas.height - padding.top - padding.bottom;
+                const maxVal = Math.max(...values, 1);
+                const barWidth = Math.min(50, (chartW / labels.length) * 0.7);
+                const gap = chartW / labels.length;
+
+                const barColors = [
+                    '#2ecc71', '#e74c5a', '#f39c12', '#3498db', '#9b59b6',
+                    '#1abc9c', '#e67e22', '#e84393', '#00b894', '#6c5ce7',
+                    '#fd79a8', '#00cec9', '#fdcb6e', '#d63031', '#0984e3',
+                    '#55a3f5', '#74b9ff', '#a29bfe', '#636e72', '#b2bec3'
+                ];
+
+                // Y-axis grid lines and labels
+                ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+                ctx.fillStyle = '#a8a8a8';
+                ctx.font = '11px Segoe UI, system-ui, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                const ySteps = 5;
+                for (let i = 0; i <= ySteps; i++) {
+                    const y = padding.top + chartH - (i / ySteps) * chartH;
+                    const val = Math.round((i / ySteps) * maxVal);
+                    ctx.beginPath();
+                    ctx.moveTo(padding.left, y);
+                    ctx.lineTo(padding.left + chartW, y);
+                    ctx.stroke();
+                    ctx.fillText(val, padding.left - 8, y);
+                }
+
+                // Bars
+                labels.forEach((label, i) => {
+                    const barH = (values[i] / maxVal) * chartH;
+                    const x = padding.left + i * gap + (gap - barWidth) / 2;
+                    const y = padding.top + chartH - barH;
+
+                    // Bar gradient
+                    const grad = ctx.createLinearGradient(x, y, x, y + barH);
+                    grad.addColorStop(0, barColors[i % barColors.length]);
+                    grad.addColorStop(1, barColors[i % barColors.length] + '88');
+                    ctx.fillStyle = grad;
+
+                    // Rounded top corners
+                    const r = Math.min(4, barWidth / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + barH);
+                    ctx.lineTo(x, y + r);
+                    ctx.quadraticCurveTo(x, y, x + r, y);
+                    ctx.lineTo(x + barWidth - r, y);
+                    ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + r);
+                    ctx.lineTo(x + barWidth, y + barH);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Value on top of bar
+                    ctx.fillStyle = '#e2e2e2';
+                    ctx.font = 'bold 12px Segoe UI, system-ui, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(values[i], x + barWidth / 2, y - 4);
+
+                    // Label below bar (rotated)
+                    ctx.save();
+                    ctx.translate(x + barWidth / 2, padding.top + chartH + 8);
+                    ctx.rotate(-Math.PI / 4);
+                    ctx.fillStyle = '#a8a8a8';
+                    ctx.font = '10px Segoe UI, system-ui, sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'middle';
+                    const shortLabel = label.length > 12 ? label.slice(0, 12) + '…' : label;
+                    ctx.fillText(shortLabel, 0, 0);
+                    ctx.restore();
+                });
+            } catch (err) {
+                qtWrite('  Chart rendering error: ' + err.message, 'qt-error');
+            }
         }
 
         // ── save a custom command (upsert by name) ────────────────────────────
@@ -643,8 +928,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cmd === 'help') {
                 qtWrite('Commands:', 'qt-info');
                 qtWrite('  list                        – list API-enabled app tiles', 'qt-muted');
-                qtWrite('  run <name>                  – call an app tile\'s API', 'qt-muted');
-                qtWrite('  curl [opts] <url>           – run a custom HTTP request', 'qt-muted');
+                qtWrite('  run <name> [--chart] [--chart-bar]  – call an app tile\'s API', 'qt-muted');
+                qtWrite('  curl [opts] <url> [--chart] [--chart-bar] – run a custom HTTP request', 'qt-muted');
                 qtWrite('    -X <METHOD>               – HTTP method (default GET)', 'qt-muted');
                 qtWrite('    -H \'Key: Value\'           – add a header (repeatable)', 'qt-muted');
                 qtWrite('    -d \'body\'                 – request body', 'qt-muted');
@@ -652,7 +937,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 qtWrite('    e.g.  curl http://host/api | jq .total', 'qt-muted');
                 qtWrite('  save <name> curl [opts] <url> – save a curl command', 'qt-muted');
                 qtWrite('  list-custom                 – show saved custom commands', 'qt-muted');
-                qtWrite('  run-custom <name>           – run a saved custom command', 'qt-muted');
+                qtWrite('  run-custom <name> [--chart] [--chart-bar] – run a saved custom command', 'qt-muted');
                 qtWrite('  delete-custom <name>        – delete a saved command', 'qt-muted');
                 qtWrite('  ask <question>              – ask the configured Ollama AI model', 'qt-muted');
                 qtWrite('  chat                        – enter conversation mode with Ollama (keeps history)', 'qt-muted');
@@ -674,7 +959,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cmd === 'list-custom') { qtLoadCustom(); return; }
 
             if (cmd.startsWith('run-custom ')) {
-                const name = cmd.slice('run-custom '.length).trim().toLowerCase();
+                const rest = cmd.slice('run-custom '.length).trim();
+                const hasChart = rest.includes('--chart') || rest.includes('-c');
+                const hasBarChart = rest.includes('--chart-bar');
+                const name = rest.replace(/\s*--chart-bar\s*/g, ' ').replace(/\s*--chart\s*/g, ' ').replace(/\s*-c\s*/g, ' ').trim().toLowerCase();
                 fetch('/api/custom/commands')
                     .then(r => r.json())
                     .then(cmds => {
@@ -685,7 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!found) { qtWrite('Custom command not found: ' + name, 'qt-error'); return; }
                         qtRunCustom({ method: found.method, url: found.url,
                                       headers: found.headers, payload: found.payload },
-                                    found.name, found.jq_filter || null);
+                                    found.name, found.jq_filter || null, hasChart, hasBarChart ? 'bar' : null);
                     })
                     .catch(() => qtWrite('Failed to fetch custom commands.', 'qt-error'));
                 return;
@@ -709,14 +997,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (cmd.startsWith('run ')) {
-                const name = cmd.slice(4).trim().toLowerCase();
+                const rest = cmd.slice(4).trim();
+                const hasChart = rest.includes('--chart') || rest.includes('-c');
+                const hasBarChart = rest.includes('--chart-bar');
+                const name = rest.replace(/\s*--chart-bar\s*/g, ' ').replace(/\s*--chart\s*/g, ' ').replace(/\s*-c\s*/g, ' ').trim().toLowerCase();
                 if (!appsCache) { qtWrite('App list not loaded yet — try again.', 'qt-error'); return; }
                 const app = appsCache.find(a =>
                     a.title.toLowerCase() === name ||
                     a.title.toLowerCase().startsWith(name)
                 );
                 if (!app) { qtWrite('App not found: ' + name, 'qt-error'); return; }
-                runApp(app);
+                if (hasChart) {
+                    qtRunCustom({ method: app.api_method || 'GET', url: app.api_url,
+                                  headers: app.api_headers || '', payload: app.api_payload || '' },
+                                app.title, null, true, hasBarChart ? 'bar' : null);
+                } else {
+                    runApp(app);
+                }
                 return;
             }
 
@@ -748,22 +1045,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // curl [opts] <url> [| jq <filter>]
+            // curl [opts] <url> [| jq <filter>] [--chart] [--chart-bar]
             if (cmd.startsWith('curl ') || cmd === 'curl') {
                 const parts    = splitPipe(cmd);
                 const curlPart = parts[0];
                 // parse optional  | jq <filter>
                 let jqFilter = null;
+                let hasChart = false;
+                let hasBarChart = false;
                 for (let i = 1; i < parts.length; i++) {
                     const seg = parts[i].trim();
                     if (seg === 'jq' || seg.startsWith('jq ')) {
                         jqFilter = seg.replace(/^jq\s*/, '').trim() || '.';
+                    } else if (seg === '--chart' || seg === '-c') {
+                        hasChart = true;
+                    } else if (seg === '--chart-bar') {
+                        hasBarChart = true;
                     }
                 }
                 const tokens = tokenize(curlPart).slice(1); // drop 'curl'
                 const req = parseCurl(tokens);
-                if (!req.url) { qtWrite('Usage: curl [opts] <url> [| jq <filter>]', 'qt-error'); return; }
-                qtRunCustom(req, null, jqFilter);
+                if (!req.url) { qtWrite('Usage: curl [opts] <url> [| jq <filter>] [--chart] [--chart-bar]', 'qt-error'); return; }
+                qtRunCustom(req, null, jqFilter, hasChart, hasBarChart ? 'bar' : null);
                 return;
             }
 

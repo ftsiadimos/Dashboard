@@ -258,7 +258,8 @@ HTML.
 Press the configured hotkey (default: `` ` ``) from any page to slide a Quake-style terminal panel down from the top of the screen. Press the key again or hit `Esc` to close it.
 
 <p align="center">
-  <img src="mis/terminal-image.webp" alt="Terminal Console" width="90%" />
+  <img src="mis/terminal-image.webp" alt="Terminal Console" width="80%" />
+  <img src="mis/terminal-chart.png" alt="Terminal Console" width="80%" />
 </p>
 <p align="center"><em>Quake-style drop-down terminal</em></p>
 
