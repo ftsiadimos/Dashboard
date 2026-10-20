@@ -24,6 +24,11 @@
     </div>
 
     <div class="table-wrap">
+        <div class="search-bar search-bar-apps">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchApps" placeholder="Search applications..." autocomplete="off">
+            <button id="clearSearch" class="btn btn-sm" style="display:none;padding:4px 8px;" title="Clear search">✕</button>
+        </div>
         <table id="appsTable" class="table">
             <thead>
                 <tr>
@@ -151,6 +156,60 @@
     });
 
     updateBulkButtonState();
+})();
+
+// Search/filter apps table
+(function () {
+    const searchInput = document.getElementById('searchApps');
+    const clearBtn = document.getElementById('clearSearch');
+    const tbody = document.getElementById('sortableApps');
+    if (!searchInput || !tbody) return;
+
+    function filterRows(query) {
+        const q = query.toLowerCase().trim();
+        const rows = tbody.querySelectorAll('tr');
+        let visible = 0;
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const match = !q || text.includes(q);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        // Show/hide empty state message
+        let emptyMsg = document.getElementById('searchEmpty');
+        if (q && visible === 0) {
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('tr');
+                emptyMsg.id = 'searchEmpty';
+                emptyMsg.innerHTML = '<td colspan="7" style="text-align:center;padding:24px;color:#888;">No applications match "' + escapeHtml(q) + '"</td>';
+                tbody.appendChild(emptyMsg);
+            } else {
+                emptyMsg.style.display = '';
+                emptyMsg.innerHTML = '<td colspan="7" style="text-align:center;padding:24px;color:#888;">No applications match "' + escapeHtml(q) + '"</td>';
+            }
+        } else if (emptyMsg) {
+            emptyMsg.remove();
+        }
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    searchInput.addEventListener('input', () => {
+        const val = searchInput.value;
+        clearBtn.style.display = val ? 'inline-block' : 'none';
+        filterRows(val);
+    });
+
+    clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearBtn.style.display = 'none';
+        filterRows('');
+        searchInput.focus();
+    });
 })();
 </script>
 {% endblock %}

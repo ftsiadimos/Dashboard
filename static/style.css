@@ -123,10 +123,41 @@ a:hover { text-decoration: underline; }
     margin: 0 auto 2.5rem;
 }
 
+/* Table search bar (apps page) — fully independent from the pill-shaped search */
+.search-bar-apps {
+    max-width: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    background: var(--bg-hover) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+.search-bar-apps input {
+    width: 100% !important;
+    padding: 0.25rem 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    font-size: 0.9rem !important;
+    color: #ffffff !important;
+    outline: none !important;
+}
+.search-bar-apps input::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.6 !important;
+}
+.search-bar-apps svg {
+    flex-shrink: 0;
+    color: var(--primary) !important;
+}
+.search-bar-apps .btn-sm {
+    flex-shrink: 0;
+}
+
 .search-form {
     position: relative;
     display: flex;
     align-items: center;
+    width: 100%;
 }
 
 .search-icon {
@@ -134,6 +165,7 @@ a:hover { text-decoration: underline; }
     left: 1rem;
     color: var(--text-muted);
     pointer-events: none;
+    z-index: 1;
 }
 
 .search-input {
@@ -504,6 +536,35 @@ html { font-size: 15px; }
     border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow-x: auto;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-hover);
+    border-bottom: 1px solid var(--border);
+}
+.search-bar svg {
+    flex-shrink: 0;
+    color: var(--primary);
+}
+.search-bar input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: #ffffff;
+    font-size: 0.9rem;
+    outline: none;
+    padding: 0.25rem 0;
+}
+.search-bar input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+.search-bar .btn-sm {
+    flex-shrink: 0;
 }
 
 .table {
