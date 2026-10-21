@@ -125,8 +125,8 @@ a:hover { text-decoration: underline; }
 
 /* Table search bar (apps page) — fully independent from the pill-shaped search */
 .search-bar-apps {
-    max-width: none !important;
-    margin: 0 !important;
+    max-width: 50% !important;
+    margin: 0 auto !important;
     border-radius: 0 !important;
     background: var(--bg-hover) !important;
     border-bottom: 1px solid var(--border) !important;
