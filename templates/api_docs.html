@@ -1,108 +1,589 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="page-header">
-    <h1>API Documentation</h1>
-</div>
-
-<div id="redoc-container" style="background:#1e1e2e;border-radius:8px;overflow:hidden;min-height:80vh;"></div>
-{% endblock %}
-
-{% block scripts %}
 <style>
-    /* Force ALL text inside the main (centre) ReDoc panel to be light */
-    #redoc-container div[id],
-    #redoc-container section,
-    #redoc-container h1,
-    #redoc-container h2,
-    #redoc-container h3,
-    #redoc-container h4,
-    #redoc-container h5,
-    #redoc-container p,
-    #redoc-container span,
-    #redoc-container td,
-    #redoc-container th,
-    #redoc-container li,
-    #redoc-container label,
-    #redoc-container div {
-        color: #cdd6f4 !important;
+    .api-docs-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
     }
 
-    /* Carve-out: response-code tab buttons need dark text on their light background */
-    #redoc-container [role="tab"] {
-        color: #1e1e2e !important;
-        font-weight: 600 !important;
+    .api-header {
+        text-align: center;
+        margin-bottom: 3rem;
     }
 
-    /* Carve-out: inline code / monospace values stay green */
-    #redoc-container code,
-    #redoc-container pre,
-    #redoc-container pre span {
-        color: #a6e3a1 !important;
+    .api-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
     }
 
-    /* Carve-out: HTTP method badges (GET/POST/etc.) keep their own colours */
-    #redoc-container [class*="http-verb"],
-    #redoc-container [class*="HttpVerb"] {
-        color: #ffffff !important;
+    .api-intro {
+        background: rgba(79, 109, 245, 0.08);
+        border-left: 4px solid var(--primary);
+        padding: 1.5rem;
+        border-radius: var(--radius-sm);
+        margin-bottom: 3rem;
+        color: var(--text-muted);
+        line-height: 1.6;
     }
 
-    /* Carve-out: links */
-    #redoc-container a {
-        color: #89b4fa !important;
+    .endpoint-group {
+        margin-bottom: 3rem;
+    }
+
+    .endpoint-group h2 {
+        font-size: 1.5rem;
+        color: var(--text);
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--border);
+    }
+
+    .endpoint {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all var(--transition);
+    }
+
+    .endpoint:hover {
+        border-color: var(--primary);
+        background: rgba(79, 109, 245, 0.05);
+    }
+
+    .endpoint-method {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-right: 0.75rem;
+        font-family: monospace;
+        color: white;
+    }
+
+    .method-get { background: #3b82f6; }
+    .method-post { background: #10b981; }
+    .method-put { background: #f59e0b; }
+    .method-patch { background: #8b5cf6; }
+    .method-delete { background: #ef4444; }
+
+    .endpoint-path {
+        font-family: monospace;
+        color: var(--text);
+        font-size: 1.05rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .endpoint-description {
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    .section-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--primary);
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .params-table, .response-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .params-table th, .response-table th {
+        background: rgba(79, 109, 245, 0.1);
+        color: var(--text);
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .params-table td, .response-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-muted);
+    }
+
+    .param-name, .response-code {
+        font-family: monospace;
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    .param-type {
+        color: var(--primary);
+        font-family: monospace;
+    }
+
+    .code-block {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 1rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+        font-family: monospace;
+        font-size: 0.9rem;
+        color: #a6e3a1;
+    }
+
+    .code-block .key { color: #cba6f7; }
+    .code-block .string { color: #f38ba8; }
+    .code-block .number { color: #f9e2af; }
+    .code-block .bool { color: #89b4fa; }
+    .code-block .null { color: #a6adc8; }
+
+    .toc {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .toc h3 {
+        color: var(--text);
+        margin-bottom: 1rem;
+    }
+
+    .toc-list {
+        list-style: none;
+    }
+
+    .toc-list li {
+        margin-bottom: 0.5rem;
+    }
+
+    .toc-list a {
+        color: var(--primary);
+        text-decoration: none;
+    }
+
+    .toc-list a:hover {
+        text-decoration: underline;
+    }
+
+    .toc-category {
+        margin-bottom: 1rem;
+    }
+
+    .toc-category strong {
+        color: var(--text);
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .required {
+        color: var(--danger);
+        font-weight: 700;
+    }
+
+    .optional {
+        color: var(--text-muted);
+        font-size: 0.85rem;
     }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/redoc@latest/bundles/redoc.standalone.js"></script>
-<script>
-    Redoc.init(
-        "{{ url_for('static', filename='openapi.json') }}",
-        {
-            theme: {
-                colors: {
-                    primary: { main: "#6c8ebf", contrastText: "#ffffff" },
-                    text: { primary: "#cdd6f4", secondary: "#a6adc8" },
-                    gray:   { 50: "#313244", 100: "#45475a" },
-                    border: { dark: "#45475a", light: "#313244" },
-                    responses: {
-                        success:  { color: "#1a3a1a", backgroundColor: "#a6e3a1" },
-                        error:    { color: "#3a1a1a", backgroundColor: "#f38ba8" },
-                        redirect: { color: "#3a2a1a", backgroundColor: "#fab387" },
-                        info:     { color: "#1a1a3a", backgroundColor: "#89b4fa" }
-                    }
-                },
-                schema: {
-                    linesColor:       "#45475a",
-                    typeNameColor:    "#cba6f7",
-                    typeTitleColor:   "#cba6f7",
-                    requireLabelColor:"#f38ba8",
-                    nestedBackground: "#161622"
-                },
-                typography: {
-                    fontFamily: "sans-serif",
-                    fontSize: "14px",
-                    headings: { fontFamily: "sans-serif" },
-                    code: {
-                        color: "#a6e3a1",
-                        backgroundColor: "#11111b",
-                        fontFamily: "monospace"
-                    },
-                    links: { color: "#89b4fa", hover: "#b4d0ff" }
-                },
-                sidebar: {
-                    backgroundColor: "#161622",
-                    textColor: "#cdd6f4",
-                    activeTextColor: "#89b4fa",
-                    groupItems:  { activeTextColor: "#89b4fa" },
-                    level1Items: { activeTextColor: "#89b4fa" },
-                    arrow: { color: "#a6adc8" }
-                },
-                rightPanel: {
-                    backgroundColor: "#11111b",
-                    textColor: "#cdd6f4"
-                }
-            }
-        },
-        document.getElementById("redoc-container")
-    );
-</script>
+
+<div class="api-docs-container">
+    <!-- Header -->
+    <div class="api-header">
+        <h1>API Documentation</h1>
+        <p style="color: var(--text-muted); font-size: 1.05rem;">Dashboard REST API Reference</p>
+    </div>
+
+    <!-- Intro -->
+    <div class="api-intro">
+        <strong>Base URL:</strong> <code>/api</code><br>
+        <strong>Response Format:</strong> JSON<br>
+        <strong>Authentication:</strong> Not required for local deployments<br><br>
+        The Dashboard API provides endpoints for managing applications, custom commands, and AI interactions.
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h3>📑 Quick Navigation</h3>
+        <ul class="toc-list">
+            <li class="toc-category">
+                <strong>Apps & Monitoring</strong>
+                <ul class="toc-list" style="padding-left: 1.5rem;">
+                    <li><a href="#apps-list">List Apps</a></li>
+                    <li><a href="#app-stats">Fetch App Stats</a></li>
+                    <li><a href="#batch-stats">Batch Stats</a></li>
+                </ul>
+            </li>
+            <li class="toc-category">
+                <strong>Custom Commands</strong>
+                <ul class="toc-list" style="padding-left: 1.5rem;">
+                    <li><a href="#commands-list">List Commands</a></li>
+                    <li><a href="#commands-save">Save Command</a></li>
+                    <li><a href="#commands-delete">Delete Command</a></li>
+                    <li><a href="#commands-run">Execute HTTP Request</a></li>
+                </ul>
+            </li>
+            <li class="toc-category">
+                <strong>AI / Ollama</strong>
+                <ul class="toc-list" style="padding-left: 1.5rem;">
+                    <li><a href="#ollama-models">List Models</a></li>
+                    <li><a href="#ollama-ask">Single Prompt</a></li>
+                    <li><a href="#ollama-chat">Chat Conversation</a></li>
+                </ul>
+            </li>
+            <li class="toc-category">
+                <strong>Utility</strong>
+                <ul class="toc-list" style="padding-left: 1.5rem;">
+                    <li><a href="#reorder">Reorder Items</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Apps Section -->
+    <div class="endpoint-group">
+        <h2>🎯 Apps & Monitoring</h2>
+
+        <div class="endpoint" id="apps-list">
+            <div>
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-path">/api/apps</span>
+            </div>
+            <p class="endpoint-description">List all apps that have an API URL configured. Used by the terminal console <code>list</code> command.</p>
+            
+            <div class="section-title">Response</div>
+            <div class="code-block">
+[
+  {
+    <span class="key">"id"</span>: <span class="number">1</span>,
+    <span class="key">"title"</span>: <span class="string">"Portainer"</span>,
+    <span class="key">"api_url"</span>: <span class="string">"http://portainer:9000/api/status"</span>
+  }
+]
+            </div>
+        </div>
+
+        <div class="endpoint" id="app-stats">
+            <div>
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-path">/api/app/{app_id}/stats</span>
+            </div>
+            <p class="endpoint-description">Fetch live stats for a single app by calling its configured API URL. Returns a formatted display value based on the app's value template. Automatically handles Nginx Proxy Manager authentication when configured.</p>
+            
+            <div class="section-title">Parameters</div>
+            <table class="params-table">
+                <tr>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td class="param-name">app_id</td>
+                    <td>path</td>
+                    <td class="param-type">integer</td>
+                    <td>Database ID of the app</td>
+                </tr>
+            </table>
+
+            <div class="section-title">Responses</div>
+            <table class="response-table">
+                <tr>
+                    <th>Status</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td class="response-code">200</td>
+                    <td>Stats fetched successfully (ok may be false if upstream call failed)</td>
+                </tr>
+                <tr>
+                    <td class="response-code">404</td>
+                    <td>App not found or no API configured</td>
+                </tr>
+            </table>
+
+            <div class="section-title">Example Response</div>
+            <div class="code-block">
+{
+  <span class="key">"ok"</span>: <span class="bool">true</span>,
+  <span class="key">"display"</span>: <span class="string">"42 active hosts"</span>
+}
+            </div>
+        </div>
+
+        <div class="endpoint" id="batch-stats">
+            <div>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/apps/stats/batch</span>
+            </div>
+            <p class="endpoint-description">Fetch stats for multiple apps in parallel (up to 20 concurrent requests). Returns a map of app ID to result.</p>
+            
+            <div class="section-title">Request Body</div>
+            <div class="code-block">
+{
+  <span class="key">"ids"</span>: [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]
+}
+            </div>
+
+            <div class="section-title">Response</div>
+            <div class="code-block">
+{
+  <span class="key">"results"</span>: {
+    <span class="key">"1"</span>: { <span class="key">"ok"</span>: <span class="bool">true</span>, <span class="key">"display"</span>: <span class="string">"online"</span> },
+    <span class="key">"2"</span>: { <span class="key">"ok"</span>: <span class="bool">false</span>, <span class="key">"display"</span>: <span class="string">"error: connection refused"</span> }
+  }
+}
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Commands Section -->
+    <div class="endpoint-group">
+        <h2>⚡ Custom Commands</h2>
+
+        <div class="endpoint" id="commands-list">
+            <div>
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-path">/api/custom/commands</span>
+            </div>
+            <p class="endpoint-description">List all saved custom HTTP command shortcuts, sorted by name.</p>
+            
+            <div class="section-title">Response</div>
+            <div class="code-block">
+[
+  {
+    <span class="key">"id"</span>: <span class="number">1</span>,
+    <span class="key">"name"</span>: <span class="string">"portainer-status"</span>,
+    <span class="key">"method"</span>: <span class="string">"GET"</span>,
+    <span class="key">"url"</span>: <span class="string">"http://portainer:9000/api/status"</span>,
+    <span class="key">"headers"</span>: <span class="string">"{}"</span>,
+    <span class="key">"payload"</span>: <span class="string">""</span>,
+    <span class="key">"jq_filter"</span>: <span class="string">".Status"</span>
+  }
+]
+            </div>
+        </div>
+
+        <div class="endpoint" id="commands-save">
+            <div>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/custom/commands</span>
+            </div>
+            <p class="endpoint-description">Create a new custom command or update an existing one (matched by name). All fields except <code>name</code> and <code>url</code> are optional.</p>
+            
+            <div class="section-title">Request Body</div>
+            <div class="code-block">
+{
+  <span class="key">"name"</span>: <span class="string">"portainer-status"</span>,
+  <span class="key">"url"</span>: <span class="string">"http://portainer:9000/api/status"</span>,
+  <span class="key">"method"</span>: <span class="string">"GET"</span>,
+  <span class="key">"headers"</span>: <span class="string">"{}"</span>,
+  <span class="key">"payload"</span>: <span class="string">""</span>,
+  <span class="key">"jq_filter"</span>: <span class="string">".Status"</span>
+}
+            </div>
+
+            <div class="section-title">Response</div>
+            <div class="code-block">
+{
+  <span class="key">"status"</span>: <span class="string">"ok"</span>
+}
+            </div>
+        </div>
+
+        <div class="endpoint" id="commands-delete">
+            <div>
+                <span class="endpoint-method method-delete">DELETE</span>
+                <span class="endpoint-path">/api/custom/commands/{cmd_id}</span>
+            </div>
+            <p class="endpoint-description">Delete a saved custom command by ID.</p>
+            
+            <div class="section-title">Parameters</div>
+            <table class="params-table">
+                <tr>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td class="param-name">cmd_id</td>
+                    <td>path</td>
+                    <td class="param-type">integer</td>
+                    <td>ID of the command to delete</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="endpoint" id="commands-run">
+            <div>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/custom/run</span>
+            </div>
+            <p class="endpoint-description">Execute an arbitrary HTTP request from the server side. Response body is truncated at 20,000 characters.</p>
+            
+            <div class="section-title">Request Body</div>
+            <div class="code-block">
+{
+  <span class="key">"url"</span>: <span class="string">"https://httpbin.org/get"</span>,
+  <span class="key">"method"</span>: <span class="string">"GET"</span>,
+  <span class="key">"headers"</span>: <span class="string">"{\"Accept\": \"application/json\"}"</span>,
+  <span class="key">"payload"</span>: <span class="string">""</span>
+}
+            </div>
+
+            <div class="section-title">Response</div>
+            <div class="code-block">
+{
+  <span class="key">"ok"</span>: <span class="bool">true</span>,
+  <span class="key">"status"</span>: <span class="number">200</span>,
+  <span class="key">"body"</span>: <span class="string">"{...}"</span>,
+  <span class="key">"truncated"</span>: <span class="bool">false</span>
+}
+            </div>
+        </div>
+    </div>
+
+    <!-- Ollama Section -->
+    <div class="endpoint-group">
+        <h2>🤖 AI / Ollama Integration</h2>
+
+        <div class="endpoint" id="ollama-models">
+            <div>
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-path">/api/ollama/models</span>
+            </div>
+            <p class="endpoint-description">Query the configured Ollama server and retrieve the list of available locally-cached models.</p>
+            
+            <div class="section-title">Response</div>
+            <div class="code-block">
+{
+  <span class="key">"ok"</span>: <span class="bool">true</span>,
+  <span class="key">"models"</span>: [
+    <span class="string">"llama3.2:latest"</span>,
+    <span class="string">"mistral:latest"</span>
+  ]
+}
+            </div>
+        </div>
+
+        <div class="endpoint" id="ollama-ask">
+            <div>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/ollama/ask</span>
+            </div>
+            <p class="endpoint-description">Send a single prompt to the configured Ollama model and receive the full response. Timeout: 120 seconds.</p>
+            
+            <div class="section-title">Request Body</div>
+            <div class="code-block">
+{
+  <span class="key">"prompt"</span>: <span class="string">"What is the capital of France?"</span>
+}
+            </div>
+
+            <div class="section-title">Response</div>
+            <div class="code-block">
+{
+  <span class="key">"ok"</span>: <span class="bool">true</span>,
+  <span class="key">"response"</span>: <span class="string">"The capital of France is Paris."</span>
+}
+            </div>
+        </div>
+
+        <div class="endpoint" id="ollama-chat">
+            <div>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/ollama/chat</span>
+            </div>
+            <p class="endpoint-description">Engage in multi-turn conversation with Ollama. Automatically prepends the system prompt configured in Settings. On context overflow (Ollama 500 error), history is trimmed and retried automatically.</p>
+            
+            <div class="section-title">Request Body</div>
+            <div class="code-block">
+{
+  <span class="key">"messages"</span>: [
+    { <span class="key">"role"</span>: <span class="string">"user"</span>, <span class="key">"content"</span>: <span class="string">"Hello!"</span> },
+    { <span class="key">"role"</span>: <span class="string">"assistant"</span>, <span class="key">"content"</span>: <span class="string">"Hi there!"</span> },
+    { <span class="key">"role"</span>: <span class="string">"user"</span>, <span class="key">"content"</span>: <span class="string">"What can you do?"</span> }
+  ]
+}
+            </div>
+
+            <div class="section-title">Response</div>
+            <div class="code-block">
+{
+  <span class="key">"ok"</span>: <span class="bool">true</span>,
+  <span class="key">"response"</span>: <span class="string">"I can help with..."</span>,
+  <span class="key">"trimmed"</span>: <span class="bool">false</span>
+}
+            </div>
+        </div>
+    </div>
+
+    <!-- Utility Section -->
+    <div class="endpoint-group">
+        <h2>🔧 Utility</h2>
+
+        <div class="endpoint" id="reorder">
+            <div>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-path">/api/reorder</span>
+            </div>
+            <p class="endpoint-description">Persist a new sort order for apps or categories by accepting an ordered list of IDs.</p>
+            
+            <div class="section-title">Request Body</div>
+            <div class="code-block">
+{
+  <span class="key">"items"</span>: [<span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>],
+  <span class="key">"type"</span>: <span class="string">"app"</span>
+}
+            </div>
+
+            <div class="section-title">Parameters</div>
+            <table class="params-table">
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Values</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td class="param-name">type</td>
+                    <td class="param-type">string</td>
+                    <td><code>"app"</code>, <code>"category"</code></td>
+                    <td>Whether to reorder apps or categories</td>
+                </tr>
+                <tr>
+                    <td class="param-name">items</td>
+                    <td class="param-type">array</td>
+                    <td>integer IDs</td>
+                    <td>Ordered list of IDs representing the new sort order</td>
+                </tr>
+            </table>
+
+            <div class="section-title">Response</div>
+            <div class="code-block">
+{
+  <span class="key">"status"</span>: <span class="string">"ok"</span>
+}
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border); color: var(--text-muted);">
+        <p>Dashboard API Documentation</p>
+        <p style="font-size: 0.9rem;">For more information, visit the project on GitHub or check the About page.</p>
+    </div>
+</div>
+
 {% endblock %}

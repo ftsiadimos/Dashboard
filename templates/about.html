@@ -1,86 +1,301 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="page-header">
-    <h1>About</h1>
-</div>
+<style>
+    .about-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+    }
 
-<div class="form-card">
-    <h2>Application Summary</h2>
-    <p>
-        Dashboard is a lightweight self-hosted web application for organising and launching your services, apps and bookmarks. It provides a clean, responsive interface with live API monitoring, a built-in terminal console and AI integration.
-    </p>
+    .about-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
 
-    <h2>Key Features</h2>
+    .about-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: var(--text);
+    }
 
-    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">App &amp; Category Management</h3>
-    <ul>
-        <li>Full CRUD for applications and categories</li>
-        <li>Drag-and-drop sort order for apps and categories</li>
-        <li>Bulk category assignment for multiple apps at once</li>
-        <li>Custom icons (upload or URL) per app</li>
-        <li>Export &amp; import apps/categories as JSON</li>
-    </ul>
+    .about-summary {
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: var(--text-muted);
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background: rgba(79, 109, 245, 0.08);
+        border-left: 4px solid var(--primary);
+        border-radius: var(--radius-sm);
+    }
 
-    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">Live API Monitoring</h3>
-    <ul>
-        <li>Per-app API URL with configurable poll interval</li>
-        <li>Live stats displayed on app tiles</li>
-        <li>Configurable alert keywords trigger visual warning/danger badges</li>
-    </ul>
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
 
-    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">Quake-style Drop-down Terminal</h3>
-    <ul>
-        <li>Slide-down console activated by a configurable hotkey (default <code>`</code>)</li>
-        <li><code>list</code> — show API-enabled app tiles</li>
-        <li><code>run &lt;name&gt;</code> — call an app's API endpoint</li>
-        <li><code>curl</code> — run custom HTTP requests with headers, body and <code>jq</code> filtering</li>
-        <li><code>save</code> / <code>list-custom</code> / <code>run-custom</code> / <code>delete-custom</code> — saved command shortcuts</li>
-        <li><code>ask &lt;question&gt;</code> / <code>chat</code> — Ollama AI integration</li>
-        <li>Command history (↑/↓), tab autocomplete</li>
-        <li>Resizable by dragging the bottom edge</li>
-        <li><kbd>Ctrl+Shift+F</kbd> — toggle fullscreen terminal</li>
-        <li>Fully customisable: trigger key, height, opacity, font, accent colour, animation speed</li>
-    </ul>
+    .feature-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 2rem;
+        transition: all var(--transition);
+        text-align: center;
+    }
 
-    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">AI / Ollama Integration</h3>
-    <ul>
-        <li>Connects to any local or remote Ollama server</li>
-        <li>Model selector with one-click fetch from the server</li>
-        <li>Configurable system prompt to set AI personality and instructions</li>
-        <li>Single-question (<code>ask</code>) and persistent conversation (<code>chat</code>) modes</li>
-    </ul>
+    .feature-card:hover {
+        border-color: var(--primary);
+        background: rgba(79, 109, 245, 0.05);
+        transform: translateY(-2px);
+    }
 
-    <h3 style="margin-top:1.2rem;margin-bottom:0.4rem;color:var(--text);">UI &amp; Appearance</h3>
-    <ul>
-        <li>Dark theme with customisable accent colour</li>
-        <li>Custom background image support</li>
-        <li>Collapsible navigation bar</li>
-        <li>Integrated search bar with configurable search provider</li>
-    </ul>
+    .feature-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 1.5rem;
+        background: rgba(79, 109, 245, 0.15);
+        border-radius: 50%;
+        color: var(--primary);
+    }
 
-    <h2 style="margin-top:1.5rem;">Developer</h2>
-    <p>
-        Built and maintained by Fotios Tsiadimos.<br>
-        GitHub: <a href="https://github.com/ftsiadimos" target="_blank" rel="noopener">ftsiadimos</a>
-    </p>
+    .feature-icon svg {
+        width: 32px;
+        height: 32px;
+        stroke-width: 1.5;
+    }
 
-    <h2 style="margin-top:1.5rem;">API Reference</h2>
-    <p>
-        Interactive documentation for all <code>/api/*</code> endpoints is available via ReDoc.<br>
-        <a href="{{ url_for('main.api_docs') }}" class="btn btn-primary" style="display:inline-block;margin-top:0.5rem;">View API Docs</a>
-    </p>
+    .feature-card h3 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: var(--text);
+    }
 
-    <hr style="margin:1.5rem 0;">
+    .feature-card ul {
+        list-style: none;
+        text-align: left;
+    }
 
-    <p><strong>Version:</strong> {{ version }}</p>
-    {% set gh = settings.get('github_url', 'https://github.com/ftsiadimos/dashboard.git') %}
-    {% if gh %}
-    <p>
-        <a href="{{ gh }}" class="btn btn-primary" target="_blank" rel="noopener">
-            <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
-            View on GitHub
-        </a>
-    </p>
-    {% endif %}
+    .feature-card li {
+        margin-bottom: 0.75rem;
+        padding-left: 1.5rem;
+        position: relative;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    .feature-card li:before {
+        content: "▸";
+        position: absolute;
+        left: 0;
+        color: var(--primary);
+        font-weight: bold;
+    }
+
+    .about-footer {
+        text-align: center;
+        border-top: 1px solid var(--border);
+        padding-top: 3rem;
+        margin-top: 3rem;
+    }
+
+    .footer-section {
+        margin-bottom: 2rem;
+    }
+
+    .footer-section h2 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        color: var(--text);
+    }
+
+    .footer-section p {
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 1rem;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all var(--transition);
+    }
+
+    .btn:hover {
+        background: var(--primary-hover);
+        text-decoration: none;
+    }
+
+    .version-info {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+</style>
+
+<div class="about-container">
+    <!-- Header -->
+    <div class="about-header">
+        <h1>About Dashboard</h1>
+    </div>
+
+    <!-- Summary -->
+    <div class="about-summary">
+        <p>
+            Dashboard is a lightweight self-hosted web application for organising and launching your services, apps and bookmarks. It provides a clean, responsive interface with live API monitoring, a built-in terminal console and AI integration.
+        </p>
+    </div>
+
+    <!-- Features Grid -->
+    <h2 style="text-align: center; margin-bottom: 2.5rem; font-size: 1.8rem; color: var(--text);">Key Features</h2>
+
+    <div class="features-grid">
+        <!-- App & Category Management -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+                    <path d="M9 9h6M9 15h6"/>
+                </svg>
+            </div>
+            <h3>App &amp; Category Management</h3>
+            <ul>
+                <li>Full CRUD for applications and categories</li>
+                <li>Drag-and-drop sort order</li>
+                <li>Bulk category assignment</li>
+                <li>Custom icons (upload or URL)</li>
+                <li>Export &amp; import as JSON</li>
+            </ul>
+        </div>
+
+        <!-- Live API Monitoring -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+            </div>
+            <h3>Live API Monitoring</h3>
+            <ul>
+                <li>Per-app API URLs</li>
+                <li>Configurable poll intervals</li>
+                <li>Live stats on app tiles</li>
+                <li>Alert keyword detection</li>
+                <li>Visual warning/danger badges</li>
+            </ul>
+        </div>
+
+        <!-- Quake Terminal -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <polyline points="4 17 10 11 4 5"/>
+                    <line x1="12" y1="19" x2="20" y2="19"/>
+                </svg>
+            </div>
+            <h3>Quake-style Terminal</h3>
+            <ul>
+                <li>Hotkey-activated drop-down console</li>
+                <li>Command shortcuts &amp; history</li>
+                <li>Custom HTTP requests with jq</li>
+                <li>Saved command management</li>
+                <li>Fully customisable appearance</li>
+            </ul>
+        </div>
+
+        <!-- AI Integration -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            <h3>AI / Ollama Integration</h3>
+            <ul>
+                <li>Ollama server integration</li>
+                <li>Model selector with auto-fetch</li>
+                <li>Custom system prompts</li>
+                <li>Single-question &amp; chat modes</li>
+                <li>Configurable chat history</li>
+            </ul>
+        </div>
+
+        <!-- UI & Appearance -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M2 17h20"/>
+                    <path d="M6 20h12"/>
+                </svg>
+            </div>
+            <h3>UI &amp; Appearance</h3>
+            <ul>
+                <li>Dark theme with accent colors</li>
+                <li>Custom background images</li>
+                <li>Collapsible navigation bar</li>
+                <li>Configurable search provider</li>
+                <li>Responsive design</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="about-footer">
+        <div class="footer-section">
+            <h2>Developer</h2>
+            <p>Built and maintained by Fotios Tsiadimos</p>
+            <p><a href="https://github.com/ftsiadimos" target="_blank" rel="noopener">GitHub: ftsiadimos</a></p>
+        </div>
+
+        <div class="footer-section">
+            <h2>Documentation &amp; Resources</h2>
+            <div class="button-group">
+                <a href="{{ url_for('main.api_docs') }}" class="btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    API Docs
+                </a>
+                {% set gh = settings.get('github_url', 'https://github.com/ftsiadimos/dashboard.git') %}
+                {% if gh %}
+                <a href="{{ gh }}" target="_blank" rel="noopener" class="btn">
+                    <svg aria-hidden="true" height="18" viewBox="0 0 16 16" width="18" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+                    GitHub
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="version-info">
+            <p><strong>Version:</strong> {{ version }}</p>
+        </div>
+    </div>
 </div>
 {% endblock %}
